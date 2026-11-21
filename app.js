@@ -81,8 +81,8 @@ const texConcreteBump = loadTex("concrete_bump.jpg", 4, 7, false);
 const texConcretePath = loadTex("concrete.jpg", 1, 6, true);
 const texBasalt = loadTex("basalt_soil.jpg", 5, 7, true);
 const texBasaltBump = loadTex("basalt_soil_bump.jpg", 5, 7, false);
-const texGrass = loadTex("grass_dalat.jpg", 42, 42, true);
-const texGrassBump = loadTex("grass_dalat_bump.jpg", 42, 42, false);
+const texGrass = loadTex("grass_dalat.jpg", 72, 72, true);
+const texGrassBump = loadTex("grass_dalat_bump.jpg", 72, 72, false);
 const texPineBark = loadTex("pine_bark.jpg", 2, 4, true);
 const texPineBranch = loadTex("pine_branch.png", 1, 1, true);
 texPineBranch.wrapS = THREE.ClampToEdgeWrapping;
@@ -273,10 +273,10 @@ function terrainHeight(x, z) {
   scene.add(groundMesh);
 }
 
-// 4B. Organic Contoured Red Basalt Courtyard Apron (replaces hard rectangle -> slopes neatly into meadow grass!)
+// 4B. Organic Contoured Red Basalt Courtyard Apron (frames concrete slab clearly & slopes softly into meadow grass!)
 {
   const rings = 14, radSegs = 64;
-  const rx = 5.65, rz = 8.95;
+  const rx = 6.35, rz = 9.75;
   const bVerts = [], bUvs = [], bIdx = [];
   for (let rI = 0; rI <= rings; rI++) {
     const f = rI / rings;
@@ -362,10 +362,10 @@ function createMountainBelt(rIn, rPeak, rOut, maxH, seed, lowRgb, midRgb, crestR
     for (let j = 0; j <= segR; j++) {
       const f = j / segR;
       const rad = THREE.MathUtils.lerp(rIn, rOut, f) * localWiggle;
-      // Cross-ridge bell curve (zero at base inner/outer skirt, peaking smoothly along spine f ~ 0.45)
+      // Cross-ridge bell curve rooted well below y=0 (-3.2m skirt) so distant hills never show hard floating seams
       const spine = Math.sin(Math.pow(f, 0.85) * Math.PI);
       const subRib = 1.0 + 0.14 * Math.sin(th * 17.0 + f * 4.5 + seed);
-      const elev = Math.max(-1.0, ridgePeak * spine * subRib - 1.2 * (1.0 - spine));
+      const elev = Math.max(-3.5, ridgePeak * spine * subRib - 3.2 * (1.0 - spine));
       verts.push(Math.cos(th) * rad, elev, Math.sin(th) * rad);
       uvs.push((i / segA) * 18.0, f * 3.0);
 
@@ -468,18 +468,19 @@ function attachFoliageWind(mat, ampScale = 1.0) {
     roughness: 0.94,
   });
 
-  // Archetype 2: Irregular multi-tiered crossed botanical pine-bough crown (built manually into single merged BufferGeometry!)
+  // Archetype 2: Lush multi-tiered broad umbrella pine-bough crown (authentic mature Da Lat Pinus kesiya!)
   const bPos = [], bNorm = [], bUv = [], bIdx = [];
   const tierSpecs = [
     // [centerY, width, height, tiltX, yaw]
-    [3.15, 2.5, 2.1, 0.24, 0.0],
-    [3.25, 2.5, 2.1, 0.24, 1.08],
-    [3.35, 2.4, 2.0, 0.22, 2.15],
-    [4.05, 2.25, 2.05, 0.20, 0.55],
-    [4.15, 2.25, 2.05, 0.20, 1.65],
-    [4.20, 2.1, 1.95, 0.18, 2.72],
-    [4.95, 1.75, 1.85, 0.12, 0.35],
-    [5.02, 1.70, 1.80, 0.12, 1.92],
+    [3.05, 3.6, 2.3, 0.42, 0.0],
+    [3.15, 3.6, 2.3, 0.42, 1.05],
+    [3.22, 3.5, 2.2, 0.40, 2.10],
+    [3.95, 3.2, 2.15, 0.36, 0.52],
+    [4.05, 3.2, 2.15, 0.36, 1.58],
+    [4.12, 3.0, 2.05, 0.34, 2.65],
+    [4.85, 2.4, 1.95, 0.24, 0.25],
+    [4.92, 2.4, 1.95, 0.24, 1.82],
+    [5.48, 1.75, 1.65, 0.12, 0.95],
   ];
   for (const [cy, bw, bh, tilt, yaw] of tierSpecs) {
     const baseIdx = bPos.length / 3;
@@ -498,8 +499,8 @@ function attachFoliageWind(mat, ampScale = 1.0) {
       const rz = ly * sT + lz * cT;
       const wx = lx * cY + rz * sY;
       const wz = -lx * sY + rz * cY;
-      bPos.push(wx, cy + ry - bh * 0.38, wz);
-      bNorm.push(sY, 0.45, cY);
+      bPos.push(wx, cy + ry - bh * 0.35, wz);
+      bNorm.push(sY, 0.55, cY);
       bUv.push(uvC[k][0], uvC[k][1]);
     }
     bIdx.push(baseIdx, baseIdx + 1, baseIdx + 2, baseIdx, baseIdx + 2, baseIdx + 3);
@@ -513,10 +514,11 @@ function attachFoliageWind(mat, ampScale = 1.0) {
 
   const crownMat = new THREE.MeshStandardMaterial({
     map: texPineBranch,
-    alphaTest: 0.36,
+    alphaTest: 0.52,
     side: THREE.DoubleSide,
-    roughness: 0.86,
-    metalness: 0.02,
+    roughness: 0.92,
+    metalness: 0.0,
+    envMapIntensity: 0.22,
   });
   attachFoliageWind(crownMat, 1.6);
 
@@ -600,10 +602,11 @@ function attachFoliageWind(mat, ampScale = 1.0) {
 
   const tuftMat = new THREE.MeshStandardMaterial({
     map: texGrassTuft,
-    alphaTest: 0.34,
+    alphaTest: 0.50,
     side: THREE.DoubleSide,
-    roughness: 0.88,
+    roughness: 0.92,
     metalness: 0.0,
+    envMapIntensity: 0.24,
   });
   attachFoliageWind(tuftMat, 0.85);
 
@@ -616,11 +619,11 @@ function attachFoliageWind(mat, ampScale = 1.0) {
   while (placed < tuftCount) {
     let gx, gz, sc = 0.55 + nextRand() * 0.68;
     if (placed < 320) {
-      // Dense organic rim along basalt courtyard & entrance concrete path edge
+      // Dense organic rim along wider red basalt courtyard & entrance concrete path edge
       const th = nextRand() * Math.PI * 2;
-      const edgeF = 0.86 + nextRand() * 0.35;
-      gx = Math.cos(th) * 5.65 * edgeF;
-      gz = Math.sin(th) * 8.95 * edgeF;
+      const edgeF = 0.88 + nextRand() * 0.32;
+      gx = Math.cos(th) * 6.35 * edgeF;
+      gz = Math.sin(th) * 9.75 * edgeF;
     } else if (placed < 430) {
       // Clumps flanking entrance concrete walkway edges
       const sideS = nextRand() > 0.5 ? 1 : -1;
