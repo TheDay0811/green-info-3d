@@ -2347,8 +2347,36 @@ document.getElementById("btn-auto-walk").addEventListener("click", () => {
 // =============================================================================
 // 14. MAIN RENDER LOOP
 // =============================================================================
-setWeather("morning");
-setTimeout(() => setWeather("heatwave"), 1100);
+const _qp = new URLSearchParams(window.location.search);
+if (_qp.get("clean") === "1") {
+  document.body.classList.add("clean-shot");
+  isAutoRotate = false;
+}
+const _qpWeather = _qp.get("weather");
+if (_qpWeather) {
+  setWeather(_qpWeather);
+  currentDeploy = targetDeploy;
+  for (const fn of slidingPanels) fn(currentDeploy);
+} else {
+  setWeather("morning");
+  setTimeout(() => setWeather("heatwave"), 1100);
+}
+const _qpView = _qp.get("view");
+if (_qpView === "shot_exterior") {
+  isWalkMode = false;
+  camPos.set(-7.6, 3.85, -12.0);
+  orbitTarget.set(0.25, 1.45, -1.0);
+  syncYawPitchFromLookAt(camPos, orbitTarget);
+  camera.position.copy(camPos);
+  camera.lookAt(orbitTarget);
+} else if (_qpView === "shot_interior") {
+  isWalkMode = false;
+  camPos.set(0.24, 1.38, -4.75);
+  orbitTarget.set(-0.38, 0.72, -1.65);
+  syncYawPitchFromLookAt(camPos, orbitTarget);
+  camera.position.copy(camPos);
+  camera.lookAt(orbitTarget);
+}
 
 window.addEventListener("resize", () => {
   winW = window.innerWidth;

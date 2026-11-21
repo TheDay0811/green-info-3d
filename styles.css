@@ -31,6 +31,19 @@ html, body {
   display: none !important;
 }
 
+body.clean-shot .sidebar,
+body.clean-shot .telemetry-bar,
+body.clean-shot .top-right-bar,
+body.clean-shot .right-quick-rail,
+body.clean-shot #weather-panel,
+body.clean-shot .bottom-dock,
+body.clean-shot #walk-hud,
+body.clean-shot #info-card,
+body.clean-shot #hotspots-layer,
+body.clean-shot #btn-mobile-menu {
+  display: none !important;
+}
+
 #canvas-wrap {
   position: fixed;
   inset: 0;
