@@ -1105,8 +1105,8 @@ const HOTSPOTS = [
     pos3d: toThree(1.4, 4.2, 3.55),
     label: "Tấm pin trượt lồng 2 tầng",
     badge: "ĐỔI MỚI CƠ KHÍ & HẠ BỨC XẠ ĐÀ LẠT",
-    body: "Tấm pin cong 2 lớp trượt từ vách hông lên đỉnh vòm vào trưa bức xạ cao ở Đà Lạt, hấp thụ năng lượng mặt trời phát điện thay vì để nhà kính tích nhiệt gây hiệu ứng đảo nhiệt.",
-    specs: ["Sáng sương 0% (100% PAR)", "Trưa nắng 100% (Giảm tích nhiệt)", "Động cơ DC 24V"],
+    body: "Tấm pin cong 2 lớp chỉ trượt từ vách hông lên đỉnh vòm khi trưa nắng bức xạ cao (> 33°C) để cắt nhiệt và phát điện; sáng sớm, trời mưa (mái màng PE đã che mưa) hoặc gió lốc đều thu gọn bên vách.",
+    specs: ["Sáng/Mưa 0% (Đón PAR)", "Trưa nắng 100% (Cắt nhiệt)", "Động cơ DC 24V"],
   },
   {
     id: "hs_mesh",
@@ -1114,7 +1114,7 @@ const HOTSPOTS = [
     pos3d: toThree(3.0, 2.6, 1.35),
     label: "Mái PE kín nước & Lưới 32 Mesh",
     badge: "VỎ LAI ĐÀ LẠT (PE + LƯỚI 32 MESH)",
-    body: "Vòm mái trên lợp màng PE UV kín nước để ngăn mưa lạnh & dẫn nước về máng âm; toàn bộ vách hông, đầu hồi vòm và cửa lùa bọc lưới 32 mesh ngăn côn trùng và thông gió tự nhiên.",
+    body: "Vòm mái trên lợp màng nhựa PE UV kín nước chịu trách nhiệm che mưa 100% & dẫn nước về máng xối; toàn bộ vách hông, đầu hồi vòm và cửa lùa bọc lưới 32 mesh ngăn côn trùng và thông gió tự nhiên.",
     specs: ["Mái PE chống mưa & UV", "Vách & đầu hồi lưới 32 Mesh", "Chân vách PE kín nền"],
   },
   {
@@ -1123,8 +1123,8 @@ const HOTSPOTS = [
     pos3d: toThree(1.1, 5.4, 1.15),
     label: "Canh tác dưa lưới nhỏ giọt",
     badge: "MÔ HÌNH PILOT 65–75 NGÀY",
-    body: "84 gốc dưa lưới trong túi giá thể xơ dừa sạch, tưới nhỏ giọt theo hàng. Tấm pin trượt che mưa đá/gió lạnh và điều tiết nhiệt độ ổn định quanh vùng tối ưu 25–33°C.",
-    specs: ["4 Luống × 21 gốc", "Giá thể xơ dừa", "Chống mưa đá/sương muối"],
+    body: "84 gốc dưa lưới trong túi giá thể xơ dừa sạch, tưới nhỏ giọt theo hàng. Mái màng PE kín bảo vệ cây khỏi mưa dông/sương muối suốt 24/7, còn tấm pin trượt chỉ kích hoạt khi trưa nắng gắt để giữ nhiệt độ quanh 25–33°C.",
+    specs: ["4 Luống × 21 gốc", "Giá thể xơ dừa", "Mái PE che mưa & sương"],
   },
   {
     id: "hs_iot",
@@ -1159,8 +1159,8 @@ const HOTSPOTS = [
     pos3d: toThree(-3.9, 11.65, 1.45),
     label: "Máng xối hở trên chống va chạm pin",
     badge: "THU NƯỚC MƯA CHUẨN TRỌNG LỰC",
-    body: "Màng PE mái vòm dừng tại x = ±2,84 m và rủ mép trực tiếp vào lòng máng xối hở trên (x = ±2,84–3,00 m), hứng trọn nước mưa từ mái PE và tấm pin mà vẫn nằm hoàn toàn bên trong ray trượt (6–13,5 cm).",
-    specs: ["Mái PE dừng ở ±2,84 m", "Máng hở trên ±2,84–3,00 m", "0% va chạm ray trượt pin"],
+    body: "Màng nhựa PE mái vòm đảm nhiệm che mưa 100% (trời mưa pin thu gọn vách không cần đưa lên), dừng tại x = ±2,84 m rủ mép trực tiếp vào lòng máng xối hở trên (x = ±2,84–3,00 m) về bồn chứa mà vẫn tách biệt hoàn toàn khỏi ray trượt ngoài cột (6–13,5 cm).",
+    specs: ["Mái PE che mưa 100%", "Máng hở trên ±2,84–3,00 m", "0% va chạm ray trượt pin"],
   },
 ];
 
@@ -1408,14 +1408,14 @@ function setWeather(mode) {
     scene.fog.density = 0.006;
     updateTelemetry(31.2, 62, 7, 3.0, "Phủ nóc (Giảm bức xạ 37°C)", "tele-warn");
   } else if (mode === "rainstorm") {
-    targetDeploy = 1.0;
+    targetDeploy = 0.0; // Mái nhựa PE đã che mưa kín -> Không cần đưa tấm pin lên!
     rainLines.visible = true;
     sunLight.intensity = 1.05;
     sunLight.color.setHex(0xe2e8f0);
     hemiLight.intensity = 0.72;
     scene.fog.color.setHex(0xcbd5e1);
     scene.fog.density = 0.016;
-    updateTelemetry(18.2, 42, 24, 0.6, "Che mưa đá & thu nước", "tele-ok");
+    updateTelemetry(18.2, 58, 24, 0.5, "Thu gọn (Mái PE che mưa)", "tele-ok");
   } else if (mode === "typhoon") {
     targetDeploy = 0.0;
     rainLines.visible = true;
@@ -1424,7 +1424,7 @@ function setWeather(mode) {
     hemiLight.intensity = 0.65;
     scene.fog.color.setHex(0x94a3b8);
     scene.fog.density = 0.020;
-    updateTelemetry(17.0, 38, 56, 0.3, "FAIL-SAFE: Thu gọn bão!", "tele-danger");
+    updateTelemetry(17.0, 46, 56, 0.3, "FAIL-SAFE: Thu gọn bão!", "tele-danger");
   }
   document.getElementById("solar-slider").value = Math.round(targetDeploy * 100);
   document.getElementById("solar-pct").textContent = `${Math.round(targetDeploy * 100)}%`;
@@ -1444,10 +1444,18 @@ document.getElementById("solar-slider").addEventListener("input", (e) => {
   const val = Number(e.target.value);
   targetDeploy = val / 100.0;
   document.getElementById("solar-pct").textContent = `${val}%`;
-  const par = Math.round(100 - 38 * targetDeploy);
-  const pv = 0.7 + 2.3 * targetDeploy;
-  const temp = currentWeather === "heatwave" ? 37.2 - 6.0 * targetDeploy : 24.5 - 2.5 * targetDeploy;
-  updateTelemetry(temp, par, currentWeather === "typhoon" ? 56 : 9, pv, val > 50 ? "Che phủ mái vòm" : "Thu gọn vách hông", val > 50 ? "tele-warn" : "tele-ok");
+  const basePar = currentWeather === "rainstorm" ? 58 : currentWeather === "typhoon" ? 46 : 100;
+  const par = Math.round(basePar * (1.0 - 0.38 * targetDeploy));
+  const pvScale = currentWeather === "rainstorm" || currentWeather === "typhoon" ? 0.35 : 1.0;
+  const pv = Number(((0.7 + 2.3 * targetDeploy) * pvScale).toFixed(1));
+  const temp = currentWeather === "heatwave" ? 37.2 - 6.0 * targetDeploy : (currentWeather === "rainstorm" ? 18.2 : 19.5) - 1.2 * targetDeploy;
+  const windSpd = currentWeather === "typhoon" ? 56 : currentWeather === "rainstorm" ? 24 : 9;
+  const modeTxt = val > 50
+    ? "Phủ nóc (Che nắng & Phát điện)"
+    : currentWeather === "rainstorm"
+      ? "Thu gọn (Mái PE che mưa)"
+      : "Thu gọn vách hông";
+  updateTelemetry(temp, par, windSpd, pv, modeTxt, val > 50 ? "tele-warn" : "tele-ok");
 });
 
 document.querySelectorAll(".wp-chip").forEach((btn) => {
@@ -1586,11 +1594,11 @@ document.querySelectorAll("[data-action='modal-intro']").forEach((el) => {
   el.addEventListener("click", () => {
     document.getElementById("tm-title").textContent = "GIỚI THIỆU PILOT ĐÀ LẠT & LỘ TRÌNH PHẦN CỨNG RUST";
     document.getElementById("tm-body").innerHTML = `
-      <p><b>Green Info – Pilot Đà Lạt (Lâm Đồng, 1.500 m):</b> Giải quyết bài toán tích nhiệt nhà kính ("hiệu ứng đảo nhiệt"), mưa đá/gió lốc cao nguyên và thoát nước tràn mái nhà kính tại Đà Lạt.</p>
+      <p><b>Green Info – Pilot Đà Lạt (Lâm Đồng, 1.500 m):</b> Giải quyết bài toán tích nhiệt nhà kính ("hiệu ứng đảo nhiệt"), mưa gió cao nguyên và thoát nước tràn mái nhà kính tại Đà Lạt.</p>
       <h4>3 Đổi mới cốt lõi:</h4>
       <ul>
-        <li><b>Mái vòm trượt lồng 2 tầng:</b> Sáng sương thu gọn vách (100% PAR); trưa nắng bức xạ cao trượt phủ mái hấp thụ nhiệt phát điện; gặp gió lốc đèo tự thu gọn an toàn (Fail-Safe).</li>
-        <li><b>Mái PE kín nước &amp; Máng xối hở trên:</b> Màng PE vòm trên dừng tại <code>x = ±2,84 m</code> đổ thẳng vào lòng máng xối hở trên (<code>x = ±2,84–3,00 m</code>), tách biệt hoàn toàn hành lang trượt pin ngoài cột (<code>6–13,5 cm</code>) và xả cuối nhà về bồn chứa.</li>
+        <li><b>Mái vòm trượt lồng 2 tầng:</b> Sáng sương, trời mưa (đã có màng nhựa PE che mưa) hay gió lốc đều thu gọn pin về vách để đón tối đa ánh sáng tán xạ, tiết kiệm ắc quy và hạ tâm gió (Fail-Safe); chỉ trượt phủ mái khi trưa nắng bức xạ cao để hạ nhiệt &amp; phát điện.</li>
+        <li><b>Mái PE kín nước &amp; Máng xối hở trên:</b> Màng nhựa PE vòm trên che mưa 100% và dừng tại <code>x = ±2,84 m</code> đổ thẳng vào lòng máng xối hở trên (<code>x = ±2,84–3,00 m</code>), tách biệt hoàn toàn hành lang trượt pin ngoài cột (<code>6–13,5 cm</code>) và xả cuối nhà về bồn chứa.</li>
         <li><b>Lộ trình tích hợp phần cứng (Rust):</b> Giai đoạn demo hiện tại tập trung hoàn thiện mô phỏng Web 3D & tối ưu thuật toán. Giai đoạn chế tạo phần cứng thực tế sẽ lập trình vi điều khiển nhúng & cổng Agri-Hub Gateway bằng ngôn ngữ <b>Rust (esp-rs / embassy &amp; Axum)</b> để đạt an toàn bộ nhớ tuyệt đối, tiết kiệm pin và vận hành bền bỉ 24/7.</li>
       </ul>
       <p><i>Lưu ý: Các thông số trên Web 3D là mô phỏng nguyên lý phục vụ trực quan hóa.</i></p>
