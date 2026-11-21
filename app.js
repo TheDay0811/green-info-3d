@@ -1486,12 +1486,127 @@ const pyraGlass = new THREE.Mesh(
 pyraGlass.position.copy(toThree(3.85, -0.45, 3.28));
 windStation.add(pyraBase, pyraGlass);
 
-const soilProbe = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.03, 0.022, 0.36, 10),
-  new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.32, metalness: 0.2 })
-);
-soilProbe.position.copy(toThree(-1.1, 3.2, 0.29));
-domeGroup.add(soilProbe);
+// Enfarm-Inspired 7-in-1 Soil Nutrient & EC Station (White/Emerald Solar Telemetry Post + 3-Prong Probe)
+function makeEnfarmFaceTex() {
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 192;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(0, 0, 256, 192);
+  // Signature Enfarm emerald green header band
+  ctx.fillStyle = "#15803d";
+  ctx.fillRect(0, 0, 256, 54);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 24px Segoe UI, Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("7-IN-1 SOIL AI", 128, 36);
+  // Crisp OLED readout card
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(22, 70, 212, 92);
+  ctx.strokeStyle = "#16a34a";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(22, 70, 212, 92);
+  ctx.fillStyle = "#4ade80";
+  ctx.font = "bold 20px Consolas, monospace";
+  ctx.fillText("NPK | EC 2.1 | pH 6.2", 128, 108);
+  ctx.fillStyle = "#bae6fd";
+  ctx.font = "17px Consolas, monospace";
+  ctx.fillText("MOIST 68% • 24.5C", 128, 140);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+{
+  const enfarmWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.28, metalness: 0.06 });
+  const enfarmGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.34, metalness: 0.08 });
+  const enfarmLedMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+  const enfarmFaceMat = new THREE.MeshStandardMaterial({ map: makeEnfarmFaceTex(), roughness: 0.30, metalness: 0.08 });
+  const enfarmSolarMat = new THREE.MeshStandardMaterial({ map: texSolarOuter, roughness: 0.16, metalness: 0.45, envMapIntensity: 1.2 });
+
+  const postFootGeo = new THREE.CylinderGeometry(0.052, 0.058, 0.020, 12);
+  const bodyCylGeo = new THREE.CylinderGeometry(0.056, 0.050, 0.155, 14);
+  const collarRingGeo = new THREE.CylinderGeometry(0.055, 0.052, 0.036, 14);
+  const ledRingGeo = new THREE.TorusGeometry(0.051, 0.0045, 6, 16);
+  const solarCapGeo = new THREE.BoxGeometry(0.115, 0.016, 0.115);
+  const solarCellGeo = new THREE.PlaneGeometry(0.098, 0.098);
+  const antGeo = new THREE.CylinderGeometry(0.003, 0.005, 0.15, 6);
+  const badgeGeo = new THREE.PlaneGeometry(0.082, 0.064);
+  const probeGripGeo = new THREE.CylinderGeometry(0.022, 0.026, 0.068, 12);
+  const probeCapGeo = new THREE.CylinderGeometry(0.026, 0.026, 0.016, 12);
+  const prongGeo = new THREE.CylinderGeometry(0.0025, 0.0012, 0.065, 6);
+
+  function addEnfarmSoilStation(sideSign, byBag) {
+    // Post placed cleanly on weed-mat shoulder next to walkway (visible down central aisle!)
+    const xPost = sideSign * 0.84;
+    const xProbe = sideSign * 1.07; // Inserted cleanly inside coco-peat growbag beside melon stem
+
+    const foot = new THREE.Mesh(postFootGeo, pipeMat);
+    foot.position.copy(toThree(xPost, byBag, 0.032));
+    domeGroup.add(foot);
+
+    addTubeBetween(toThree(xPost, byBag, 0.035), toThree(xPost, byBag, 0.39), 0.015, steelMat, domeGroup);
+
+    const collar = new THREE.Mesh(collarRingGeo, enfarmGreenMat);
+    collar.position.copy(toThree(xPost, byBag, 0.398));
+    domeGroup.add(collar);
+
+    const body = new THREE.Mesh(bodyCylGeo, enfarmWhiteMat);
+    body.position.copy(toThree(xPost, byBag, 0.485));
+    body.castShadow = !isMobileDevice;
+    domeGroup.add(body);
+
+    const ledRing = new THREE.Mesh(ledRingGeo, enfarmLedMat);
+    ledRing.rotation.x = Math.PI / 2;
+    ledRing.position.copy(toThree(xPost, byBag, 0.558));
+    domeGroup.add(ledRing);
+
+    // Front readout sticker facing toward center concrete aisle (-sideSign * X)
+    const badge = new THREE.Mesh(badgeGeo, enfarmFaceMat);
+    badge.position.copy(toThree(xPost - sideSign * 0.056, byBag, 0.488));
+    badge.rotation.y = sideSign < 0 ? Math.PI / 2 : -Math.PI / 2;
+    domeGroup.add(badge);
+
+    // Tilted self-charging solar cap + LoRa/4G whip antenna
+    const cap = new THREE.Mesh(solarCapGeo, enfarmGreenMat);
+    cap.position.copy(toThree(xPost, byBag, 0.575));
+    cap.rotation.z = sideSign < 0 ? -0.24 : 0.24;
+    const cell = new THREE.Mesh(solarCellGeo, enfarmSolarMat);
+    cell.rotation.x = -Math.PI / 2;
+    cell.position.y = 0.009;
+    cap.add(cell);
+    domeGroup.add(cap);
+
+    const ant = new THREE.Mesh(antGeo, pipeMat);
+    ant.position.copy(toThree(xPost + sideSign * 0.034, byBag + 0.034, 0.64));
+    domeGroup.add(ant);
+
+    // Emerald & Stainless Multi-Prong 7-in-1 Soil Probe plugged directly into coco-peat root zone
+    const pGrip = new THREE.Mesh(probeGripGeo, enfarmGreenMat);
+    pGrip.position.copy(toThree(xProbe, byBag, 0.295));
+    const pCollar = new THREE.Mesh(probeCapGeo, enfarmWhiteMat);
+    pCollar.position.copy(toThree(xProbe, byBag, 0.264));
+    domeGroup.add(pGrip, pCollar);
+
+    for (const pyOff of [-0.011, 0.0, 0.011]) {
+      const prong = new THREE.Mesh(prongGeo, steelMat);
+      prong.position.copy(toThree(xProbe, byBag + pyOff, 0.238));
+      domeGroup.add(prong);
+    }
+
+    // Flexible waterproof RS485 cable arcing smoothly between probe top & telemetry post gland
+    const cableCurve = new THREE.CatmullRomCurve3([
+      toThree(xProbe, byBag, 0.326),
+      toThree((xProbe + xPost) * 0.5 + sideSign * 0.04, byBag + 0.02, 0.30),
+      toThree(xPost + sideSign * 0.042, byBag, 0.405),
+    ]);
+    domeGroup.add(new THREE.Mesh(new THREE.TubeGeometry(cableCurve, 12, 0.0045, 5, false), pipeMat));
+  }
+
+  // Place Zone 1 hero station (Hotspot #6) and Zone 2 station cleanly along walkway shoulders
+  addEnfarmSoilStation(-1, 3.12);
+  addEnfarmSoilStation(1, 7.92);
+}
 
 // Flush ALL queued static tubes (frame columns, arches, purlins, gable bars, IoT stand, wind mast) into <= 4 InstancedMesh calls!
 {
@@ -1618,11 +1733,11 @@ const HOTSPOTS = [
   {
     id: "hs_soil",
     num: 6,
-    pos3d: toThree(-1.1, 3.2, 0.55),
+    pos3d: toThree(-0.84, 3.12, 0.72),
     label: "Cảm biến dinh dưỡng đất & EC",
-    badge: "CHỐNG THẤT THOÁT PHÂN BÓN",
-    body: "Định hướng kết nối chuẩn API mở/RS485 đo N-P-K, pH, EC và độ ẩm giá thể thời gian thực, khắc phục tình trạng thất thoát 50–60% phân bón truyền thống.",
-    specs: ["7 chỉ số đất thời gian thực", "Chuẩn Modbus/REST API", "Tưới châm phân đúng liều"],
+    badge: "ĐỊNH HƯỚNG CHUẨN ENFARM (7 CHỈ SỐ)",
+    body: "Thiết kế theo cấu trúc trạm đo đất thông minh Enfarm F+: đầu dò 3 chấu thép không gỉ cắm trực tiếp vùng rễ xơ dừa đo 7 chỉ số thời gian thực (N-P-K, pH, EC, ẩm, nhiệt độ), nối cáp tới trụ phát đáp dùng pin mặt trời & ăng-ten LoRa/4G chống thất thoát 50–60% phân bón.",
+    specs: ["Đầu dò 7 chỉ số N-P-K/EC/pH", "Trạm phát đáp pin mặt trời", "Chuẩn API mở / RS485"],
   },
   {
     id: "hs_rain",
