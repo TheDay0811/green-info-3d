@@ -2,9 +2,11 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GREEN INFO 3D – Trải nghiệm Nhà vòm Nông điện Thông minh | HUFLIT 2026</title>
-  <meta name="description" content="Trải nghiệm thực tế ảo 3D nhập vai mô hình nhà vòm nông điện trượt lồng Green Info – Đội Hệ Sinh Thái Số, HUFLIT Innovation & Startup 2026." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#14532d" />
+  <title>GREEN INFO 3D – Pilot Đà Lạt | Trải nghiệm Nhà vòm Nông điện</title>
+  <meta name="description" content="Trải nghiệm thực tế ảo 3D nhập vai mô hình nhà vòm nông điện trượt lồng Green Info tại Đà Lạt – Đội Hệ Sinh Thái Số, HUFLIT 2026." />
   <link rel="stylesheet" href="styles.css" />
   <script type="importmap">
     {
@@ -25,12 +27,12 @@
   <div id="loader-veil">
     <div class="loader-card">
       <div class="loader-spinner"></div>
-      <div class="loader-title">GREEN INFO 3D</div>
-      <div class="loader-sub">Đang khởi tạo mô hình nhà vòm 6 m × 12 m &amp; vườn dưa lưới...</div>
+      <div class="loader-title">GREEN INFO 3D • ĐÀ LẠT</div>
+      <div class="loader-sub">Đang tải mô hình nhà vòm 6 m × 12 m &amp; đồi thông cao nguyên...</div>
     </div>
   </div>
 
-  <!-- Mobile Menu Trigger (shown when sidebar collapsed) -->
+  <!-- Mobile Menu Trigger (only shown on mobile or when collapsed) -->
   <button id="btn-mobile-menu" class="glass-pill mobile-menu-btn" title="Mở danh mục tham quan">
     <span class="ico">☰</span>
     <span class="lbl-desktop">Danh mục</span><span class="lbl-mobile">Menu</span>
@@ -41,7 +43,7 @@
     <button id="btn-toggle-sidebar" class="sidebar-collapse-tab" title="Thu gọn / Mở rộng menu">«</button>
 
     <div class="brand-header">
-      <div class="brand-badge">HUFLIT STARTUP 2026 • VÒNG 2</div>
+      <div class="brand-badge">PILOT ĐÀ LẠT (1.500 m) • VÒNG 2</div>
       <div class="brand-logo">GREEN <span>INFO</span></div>
       <div class="brand-tagline">Nhà vòm Nông điện Trượt lồng 3D</div>
     </div>
@@ -50,10 +52,10 @@
 
     <nav class="nav-list" id="nav-list">
       <button class="nav-item" data-action="modal-intro">
-        <span class="nav-ico">📘</span><span>GIỚI THIỆU DỰ ÁN</span>
+        <span class="nav-ico">📘</span><span>GIỚI THIỆU &amp; LỘ TRÌNH RUST</span>
       </button>
       <button class="nav-item active" data-view="overview">
-        <span class="nav-ico">🚁</span><span>TOÀN CẢNH NGOÀI VÒM</span>
+        <span class="nav-ico">🚁</span><span>TOÀN CẢNH ĐỒI ĐÀ LẠT</span>
       </button>
       <button class="nav-item" data-view="walk_entry">
         <span class="nav-ico">🚶</span><span>NHẬP VAI ĐI BỘ VÀO VƯỜN</span>
@@ -77,7 +79,7 @@
         <span class="nav-ico">🎬</span><span>VIDEO STORY (01:40)</span>
       </button>
       <button class="nav-item" data-action="toggle-weather-bar">
-        <span class="nav-ico">🌦️</span><span>MÔ PHỎNG THỜI TIẾT</span>
+        <span class="nav-ico">🌦️</span><span>THỜI TIẾT ĐÀ LẠT &amp; PIN</span>
       </button>
       <button class="nav-item" data-action="modal-team">
         <span class="nav-ico">👥</span><span>ĐỘI HỆ SINH THÁI SỐ</span>
@@ -87,10 +89,10 @@
 
   <!-- Top-Center Live Microclimate Simulation Telemetry -->
   <div id="telemetry-bar" class="telemetry-bar">
-    <div class="tele-tag">MÔ PHỎNG NGUYÊN LÝ</div>
+    <div class="tele-tag"><span class="lbl-desktop">MÔ PHỎNG ĐÀ LẠT</span><span class="lbl-mobile">ĐÀ LẠT</span></div>
     <div class="tele-item">
       <span class="tele-lbl">Nhiệt vòm</span>
-      <span id="tele-temp" class="tele-val">28.5°C</span>
+      <span id="tele-temp" class="tele-val">19.5°C</span>
     </div>
     <div class="tele-item">
       <span class="tele-lbl">Ánh sáng PAR</span>
@@ -98,7 +100,7 @@
     </div>
     <div class="tele-item">
       <span class="tele-lbl">Gió</span>
-      <span id="tele-wind" class="tele-val">8 km/h</span>
+      <span id="tele-wind" class="tele-val">9 km/h</span>
     </div>
     <div class="tele-item">
       <span class="tele-lbl">Điện PV</span>
@@ -110,7 +112,7 @@
     </div>
   </div>
 
-  <!-- Top-Right Action Pills (Matching STU VT360 layout) -->
+  <!-- Top-Right Action Pills -->
   <div class="top-right-bar">
     <button id="btn-open-video-top" class="cta-video-btn">
       <span>▶</span> <span class="lbl-desktop">XEM VIDEO STORY</span><span class="lbl-mobile">Video Story</span>
@@ -120,9 +122,9 @@
     </button>
   </div>
 
-  <!-- Right-Edge Quick-Jump Buttons (Matching STU helicopter & pin icons) -->
+  <!-- Right-Edge Quick-Jump Buttons -->
   <div class="right-quick-rail">
-    <button class="quick-circle-btn" data-view="overview" title="Toàn cảnh ngoài vòm">
+    <button class="quick-circle-btn" data-view="overview" title="Toàn cảnh Đà Lạt">
       <span>🚁</span>
       <small>Toàn cảnh</small>
     </button>
@@ -134,24 +136,28 @@
       <span>🗺️</span>
       <small>Sơ đồ</small>
     </button>
+    <button id="btn-toggle-labels" class="quick-circle-btn mobile-only-btn" title="Hiện/Ẩn chữ nhãn hotspot">
+      <span>🏷️</span>
+      <small>Nhãn</small>
+    </button>
   </div>
 
   <!-- Interactive Weather & Telescopic Solar Control Panel -->
   <div id="weather-panel" class="weather-panel">
     <div class="wp-header">
-      <span>ĐIỀU KHIỂN MÔI TRƯỜNG &amp; TẤM PIN TRƯỢT LỒNG</span>
-      <button id="btn-close-wp" class="wp-close" title="Ẩn bảng">✕</button>
+      <span>MÔ PHỎNG KHÍ HẬU ĐÀ LẠT &amp; TẤM PIN TRƯỢT LỒNG</span>
+      <button id="btn-close-wp" class="wp-close" title="Thu gọn bảng">✕</button>
     </div>
     <div class="wp-presets">
-      <button class="wp-chip active" data-weather="morning">🌤️ Sáng dịu (Thu pin)</button>
-      <button class="wp-chip" data-weather="heatwave">☀️ Nắng gắt 40°C</button>
-      <button class="wp-chip" data-weather="rainstorm">🌧️ Mưa dông</button>
-      <button class="wp-chip" data-weather="typhoon">💨 Bão gió (Fail-Safe)</button>
+      <button class="wp-chip active" data-weather="morning">🌫️ Sáng sương (19°C)</button>
+      <button class="wp-chip" data-weather="heatwave">☀️ Trưa bức xạ (37°C)</button>
+      <button class="wp-chip" data-weather="rainstorm">🌧️ Mưa dông / Đá</button>
+      <button class="wp-chip" data-weather="typhoon">💨 Gió lốc (Fail-Safe)</button>
     </div>
     <div class="wp-slider-row">
-      <label for="solar-slider">Vị trí tấm pin cong (0% Vách đứng → 100% Đỉnh vòm):</label>
-      <input id="solar-slider" type="range" min="0" max="100" value="100" />
-      <span id="solar-pct" class="wp-pct">100%</span>
+      <label for="solar-slider"><span class="lbl-desktop">Vị trí tấm pin cong (0% Vách → 100% Đỉnh):</span><span class="lbl-mobile">Trượt pin (0–100%):</span></label>
+      <input id="solar-slider" type="range" min="0" max="100" value="0" />
+      <span id="solar-pct" class="wp-pct">0%</span>
     </div>
   </div>
 
@@ -164,11 +170,14 @@
       <div id="joystick-base" class="joystick-base">
         <div id="joystick-knob" class="joystick-knob"></div>
       </div>
-      <button id="btn-auto-walk" class="auto-walk-btn">▶ Tự bước vào vườn</button>
+      <div class="walk-mob-btns">
+        <button id="btn-auto-walk" class="auto-walk-btn">▶ Tự bước vào vườn</button>
+        <button id="btn-gyro" class="gyro-btn">📱 Xoay máy 360°</button>
+      </div>
     </div>
   </div>
 
-  <!-- Floating Scene/Hotspot Info Card -->
+  <!-- Floating Scene/Hotspot Info Card (Bottom-Sheet on Mobile!) -->
   <div id="info-card" class="info-card hidden">
     <button id="btn-close-info" class="card-close">✕</button>
     <div id="info-badge" class="info-badge">THÔNG SỐ KỸ THUẬT</div>
@@ -177,43 +186,34 @@
     <div id="info-specs" class="info-specs"></div>
   </div>
 
-  <!-- Right-Half 2D Floorplan Drawer (SƠ ĐỒ - STU VT360 style) -->
+  <!-- Right-Half 2D Floorplan Drawer (SƠ ĐỒ) -->
   <div id="map-drawer" class="map-drawer hidden">
     <div class="drawer-header">
       <div>
-        <div class="drawer-title">SƠ ĐỒ MẶT BẰNG NHÀ VÒM (6 m × 12 m)</div>
-        <div class="drawer-sub">Nhấn vào từng điểm ghim đỏ trên sơ đồ để dịch chuyển tức thì trong 3D</div>
+        <div class="drawer-title">SƠ ĐỒ MẶT BẰNG NHÀ VÒM ĐÀ LẠT (6 m × 12 m)</div>
+        <div class="drawer-sub">Nhấn vào điểm ghim đỏ để dịch chuyển tức thì trong không gian 3D</div>
       </div>
       <button id="btn-close-map" class="drawer-close">✕</button>
     </div>
     <div class="map-svg-wrap">
       <svg viewBox="0 0 420 620" class="floorplan-svg" aria-label="Sơ đồ nhà vòm Green Info 6m x 12m">
-        <!-- Background lawn -->
         <rect x="0" y="0" width="420" height="620" rx="16" fill="#ecfdf5" />
-        <!-- Outer perimeter 6m x 12m (scale: 1m = 42px -> 252x504 centered at x=84, y=58) -->
         <rect x="84" y="58" width="252" height="504" rx="6" fill="#ffffff" stroke="#14532d" stroke-width="4" />
-        <!-- Mesh wall callout -->
         <rect x="80" y="54" width="260" height="512" rx="8" fill="none" stroke="#0284c7" stroke-width="2" stroke-dasharray="6 4" />
-        <!-- Center walkway -->
         <rect x="186" y="78" width="48" height="464" fill="#e2e8f0" />
         <text x="210" y="205" text-anchor="middle" font-size="11" fill="#475569" font-weight="bold" transform="rotate(-90 210 205)">LỐI ĐI GIỮA (0,8 m)</text>
-        <!-- 4 Cantaloupe grow beds -->
         <rect x="102" y="88" width="32" height="444" rx="4" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5" />
         <rect x="144" y="88" width="32" height="444" rx="4" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5" />
         <rect x="244" y="88" width="32" height="444" rx="4" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5" />
         <rect x="286" y="88" width="32" height="444" rx="4" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5" />
-        <!-- Solar Zone 1 & Zone 2 shading bands -->
         <rect x="74" y="78" width="272" height="210" fill="#0284c7" fill-opacity="0.10" stroke="#0369a1" stroke-dasharray="4 3" />
         <text x="210" y="102" text-anchor="middle" font-size="10" fill="#0369a1" font-weight="bold">KHU PIN TRƯỢT 1 (0,5 – 5,5 m)</text>
         <rect x="74" y="332" width="272" height="210" fill="#0284c7" fill-opacity="0.10" stroke="#0369a1" stroke-dasharray="4 3" />
         <text x="210" y="528" text-anchor="middle" font-size="10" fill="#0369a1" font-weight="bold">KHU PIN TRƯỢT 2 (6,5 – 11,5 m)</text>
-        <!-- Sliding Door at front (bottom of map y=562) -->
         <rect x="180" y="556" width="60" height="12" fill="#0f172a" rx="2" />
         <text x="210" y="586" text-anchor="middle" font-size="11" fill="#0f172a" font-weight="bold">CỬA LÙA CHÍNH (1,2 m × 2,0 m)</text>
-        <!-- Dimensions -->
-        <text x="210" y="36" text-anchor="middle" font-size="12" fill="#14532d" font-weight="bold">CHIỀU RỘNG: 6,0 m (8 KHOANG × 1,5 m = 12,0 m)</text>
+        <text x="210" y="36" text-anchor="middle" font-size="12" fill="#14532d" font-weight="bold">MÔ-ĐUN PILOT ĐÀ LẠT: 6,0 m × 12,0 m</text>
 
-        <!-- Clickable Red Pins -->
         <g class="map-pin" data-view="overview" transform="translate(362, 575)">
           <circle r="13" fill="#dc2626" stroke="#ffffff" stroke-width="2.5" />
           <text y="4" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="bold">1</text>
@@ -273,10 +273,10 @@
     </div>
   </div>
 
-  <!-- Bottom-Center 7-Button Circular Dock (STU VT360 Signature Dock) -->
+  <!-- Bottom-Center 7-Button Circular Dock -->
   <div class="bottom-dock">
     <button id="dock-prev" class="dock-btn" title="Góc nhìn trước">⏮</button>
-    <button id="dock-walk" class="dock-btn" title="Bật/Tắt chế độ Nhập vai đi bộ (WASD / Joystick)">🚶</button>
+    <button id="dock-walk" class="dock-btn" title="Bật/Tắt chế độ Nhập vai đi bộ">🚶</button>
     <button id="dock-audio" class="dock-btn" title="Đọc thuyết minh khu vực hiện tại">🔊</button>
     <button id="dock-autorotate" class="dock-btn active" title="Tự động xoay tham quan">🔄</button>
     <button id="dock-solar" class="dock-btn" title="Trượt tấm pin Thu gọn ↔ Phủ nóc">☀️</button>

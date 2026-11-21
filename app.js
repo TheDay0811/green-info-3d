@@ -16,7 +16,6 @@ const PHI_MAX = Math.asin((W / 2.0) / R_ARCH);
 // Helper: Blender (X, Y, Z) -> Three.js (X, Z, Y - HALF_L)
 const toThree = (bx, by, bz) => new THREE.Vector3(bx, bz, by - HALF_L);
 
-// Exact convex outward guide track equation from build_greenhouse.py
 function getTrackPoint(u, offset, sideSign) {
   const rRoof = R_ARCH + offset;
   const xWall = W / 2.0 + offset;
@@ -47,7 +46,7 @@ function getTrackPoint(u, offset, sideSign) {
 }
 
 // =============================================================================
-// 2. PROCEDURAL TEXTURES (Instant loading, zero external assets)
+// 2. PROCEDURAL TEXTURES (Zero external image requests -> instant mobile QR load)
 // =============================================================================
 function makeSolarTexture(baseHex, lineHex) {
   const c = document.createElement("canvas");
@@ -56,9 +55,8 @@ function makeSolarTexture(baseHex, lineHex) {
   ctx.fillStyle = baseHex;
   ctx.fillRect(0, 0, 256, 256);
 
-  // Subtle cell gradient shimmer
   const g = ctx.createLinearGradient(0, 0, 256, 256);
-  g.addColorStop(0, "rgba(255,255,255,0.12)");
+  g.addColorStop(0, "rgba(255,255,255,0.14)");
   g.addColorStop(0.5, "rgba(255,255,255,0.0)");
   g.addColorStop(1, "rgba(255,255,255,0.08)");
   ctx.fillStyle = g;
@@ -130,14 +128,39 @@ function makeSkyTexture() {
   const c = document.createElement("canvas");
   c.width = 32; c.height = 256;
   const ctx = c.getContext("2d");
+  // Crisp Da Lat highland blue-mint sky with soft morning valley haze
   const g = ctx.createLinearGradient(0, 0, 0, 256);
-  g.addColorStop(0.0, "#1d4ed8");
-  g.addColorStop(0.35, "#38bdf8");
-  g.addColorStop(0.68, "#bae6fd");
-  g.addColorStop(0.84, "#fef3c7");
-  g.addColorStop(1.0, "#ecfccb");
+  g.addColorStop(0.0, "#1e40af");
+  g.addColorStop(0.32, "#38bdf8");
+  g.addColorStop(0.65, "#bae6fd");
+  g.addColorStop(0.84, "#e0f2fe");
+  g.addColorStop(1.0, "#fef3c7");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 32, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function makeSignTexture() {
+  const c = document.createElement("canvas");
+  c.width = 512; c.height = 192;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#14532d";
+  ctx.fillRect(0, 0, 512, 192);
+  ctx.strokeStyle = "#4ade80";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(8, 8, 496, 176);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 46px Segoe UI, Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("GREEN INFO", 256, 74);
+  ctx.fillStyle = "#bae6fd";
+  ctx.font = "bold 28px Segoe UI, Arial, sans-serif";
+  ctx.fillText("PILOT ĐÀ LẠT (1.500 m)", 256, 122);
+  ctx.fillStyle = "#dcfce7";
+  ctx.font = "20px Segoe UI, Arial, sans-serif";
+  ctx.fillText("NHÀ VÒM NÔNG ĐIỆN TRƯỢT LỒNG", 256, 158);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -148,9 +171,9 @@ function makeSkyTexture() {
 // =============================================================================
 const wrap = document.getElementById("canvas-wrap");
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0xdbeafe, 0.0085);
+scene.fog = new THREE.FogExp2(0xe0f2fe, 0.011); // Subtle Da Lat highland valley mist
 
-const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 240);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -161,84 +184,116 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 wrap.appendChild(renderer.domElement);
 
-// Sky Dome
 const skyMat = new THREE.MeshBasicMaterial({ map: makeSkyTexture(), side: THREE.BackSide, fog: false });
-const skyDome = new THREE.Mesh(new THREE.SphereGeometry(120, 24, 16), skyMat);
-scene.add(skyDome);
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(135, 24, 16), skyMat));
 
-// Lights
-const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x3f6212, 0.88);
+const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x3f6212, 0.92);
 scene.add(hemiLight);
 
 const sunLight = new THREE.DirectionalLight(0xfffbeb, 2.3);
-sunLight.position.set(11, 15, -9);
+sunLight.position.set(11, 16, -9);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.mapSize.set(1024, 1024);
 sunLight.shadow.camera.near = 2;
-sunLight.shadow.camera.far = 45;
-const d = 11;
-sunLight.shadow.camera.left = -d;
-sunLight.shadow.camera.right = d;
-sunLight.shadow.camera.top = d;
-sunLight.shadow.camera.bottom = -d;
+sunLight.shadow.camera.far = 48;
+const sd = 11;
+sunLight.shadow.camera.left = -sd;
+sunLight.shadow.camera.right = sd;
+sunLight.shadow.camera.top = sd;
+sunLight.shadow.camera.bottom = -sd;
 sunLight.shadow.bias = -0.0008;
 scene.add(sunLight);
 
 // =============================================================================
-// 4. ENVIRONMENT (Farm Ground, Pathway, Distant Trees & Hills)
+// 4. DA LAT HIGHLAND ENVIRONMENT (Basalt Terraces, Pine Trees, Mountain Ridges)
 // =============================================================================
+// Highland meadow base
 const groundMesh = new THREE.Mesh(
-  new THREE.CircleGeometry(110, 48),
-  new THREE.MeshStandardMaterial({ color: 0x65a30d, roughness: 0.95 })
+  new THREE.CircleGeometry(125, 48),
+  new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.95 })
 );
 groundMesh.rotation.x = -Math.PI / 2;
 groundMesh.receiveShadow = true;
 scene.add(groundMesh);
 
-// Farm concrete/earth pad under dome + approach path
+// Red basalt highland soil terrace surrounding the dome
+const basaltTerrace = new THREE.Mesh(
+  new THREE.BoxGeometry(10.8, 0.03, 17.5),
+  new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.96 })
+);
+basaltTerrace.position.set(0, 0.012, 0);
+basaltTerrace.receiveShadow = true;
+scene.add(basaltTerrace);
+
+// Concrete dome foundation pad & walkway
 const padMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(7.2, 0.04, 13.4),
+  new THREE.BoxGeometry(7.0, 0.04, 13.2),
   new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.9 })
 );
-padMesh.position.set(0, 0.015, 0);
+padMesh.position.set(0, 0.025, 0);
 padMesh.receiveShadow = true;
 scene.add(padMesh);
 
 const pathMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(1.4, 0.03, 12.0),
+  new THREE.BoxGeometry(1.5, 0.03, 12.0),
   new THREE.MeshStandardMaterial({ color: 0xa8a29e, roughness: 0.92 })
 );
-pathMesh.position.set(0, 0.012, -12.5);
+pathMesh.position.set(0, 0.02, -12.5);
 pathMesh.receiveShadow = true;
 scene.add(pathMesh);
 
-// Decorative stylized countryside trees around the perimeter
-const treeGroup = new THREE.Group();
-const trunkGeo = new THREE.CylinderGeometry(0.14, 0.2, 1.8, 8);
-const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
-const crownGeo = new THREE.DodecahedronGeometry(1.3, 1);
-const crownMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.85 });
-const treeCoords = [
-  [-10, -8], [-12, 0], [-11, 9], [10, -7], [12, 3], [11, 10], [-5, 13], [5, 13], [-16, -15], [16, -13]
-];
-const treeCrowns = [];
-for (const [tx, tz] of treeCoords) {
-  const tg = new THREE.Group();
-  const tr = new THREE.Mesh(trunkGeo, trunkMat);
-  tr.position.y = 0.9;
-  const cr = new THREE.Mesh(crownGeo, crownMat);
-  cr.position.y = 2.4;
-  cr.scale.set(1.1, 1.25, 1.1);
-  tg.add(tr, cr);
-  tg.position.set(tx, 0, tz);
-  tg.scale.setScalar(0.9 + ((Math.abs(tx * tz) % 7) * 0.08));
-  treeGroup.add(tg);
-  treeCrowns.push(cr);
+// Rolling Da Lat Mountain Ridges around 360° horizon
+const mtnGroup = new THREE.Group();
+const mtnMatNear = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.95 });
+const mtnMatFar = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.95 });
+for (let i = 0; i < 18; i++) {
+  const ang = (i / 18) * Math.PI * 2;
+  const rDist = 52 + (i % 3) * 14;
+  const h = 11 + ((i * 7) % 10);
+  const w = 20 + ((i * 5) % 12);
+  const hill = new THREE.Mesh(new THREE.ConeGeometry(w, h, 7), i % 2 === 0 ? mtnMatNear : mtnMatFar);
+  hill.position.set(Math.cos(ang) * rDist, h * 0.42, Math.sin(ang) * rDist);
+  hill.scale.set(1.4, 1.0, 1.0);
+  mtnGroup.add(hill);
 }
-scene.add(treeGroup);
+scene.add(mtnGroup);
+
+// Da Lat Multi-Tiered Pine Trees (Cây thông Đà Lạt)
+const pineGroup = new THREE.Group();
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.92 });
+const pineLeafMat1 = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.88 });
+const pineLeafMat2 = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.88 });
+const pineCoords = [
+  [-9.5, -8.5], [-13.0, -2.0], [-11.0, 7.5], [-16.0, 12.0],
+  [9.5, -7.5], [12.5, 2.0], [11.0, 9.5], [16.5, -13.0],
+  [-6.5, 14.5], [6.5, 14.5], [-18.0, -14.0], [18.0, 13.0],
+];
+const pineCrowns = [];
+for (let idx = 0; idx < pineCoords.length; idx++) {
+  const [tx, tz] = pineCoords[idx];
+  const pg = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 2.2, 7), trunkMat);
+  trunk.position.y = 1.1;
+  pg.add(trunk);
+
+  const crownWrap = new THREE.Group();
+  for (let tier = 0; tier < 3; tier++) {
+    const r = 1.65 - tier * 0.38;
+    const h = 2.1 - tier * 0.25;
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), tier % 2 === 0 ? pineLeafMat1 : pineLeafMat2);
+    cone.position.y = 2.1 + tier * 1.15;
+    crownWrap.add(cone);
+  }
+  pg.add(crownWrap);
+  pg.position.set(tx, 0, tz);
+  pg.scale.setScalar(0.85 + (idx % 4) * 0.14);
+  pineGroup.add(pg);
+  pineCrowns.push(crownWrap);
+}
+scene.add(pineGroup);
 
 // =============================================================================
-// 5. GREEN INFO 3D DOME STRUCTURE
+// 5. GREEN INFO 3D DOME STRUCTURE & DA LAT RAINWATER HARVESTING TANK
 // =============================================================================
 const domeGroup = new THREE.Group();
 scene.add(domeGroup);
@@ -266,7 +321,6 @@ function addTubeBetween(p1, p2, r, mat, parent) {
   parent.add(m);
 }
 
-// 9 Arch Frames (8 bays of 1.5m)
 const bays = 8;
 const archCurvePts = [];
 for (let s = 0; s <= 24; s++) {
@@ -278,15 +332,11 @@ for (let i = 0; i <= bays; i++) {
   const by = (i * L) / bays;
   for (const sx of [-1, 1]) {
     const xCol = sx * (W / 2.0);
-    // Concrete footing
     const ft = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.28, 12), concMat);
     ft.position.copy(toThree(xCol, by, 0.12));
     domeGroup.add(ft);
-
-    // Side vertical column
     addTubeBetween(toThree(xCol, by, 0.0), toThree(xCol, by, H_SIDE), 0.022, steelMat, domeGroup);
   }
-  // Curved arch segments
   for (let s = 0; s < archCurvePts.length - 1; s++) {
     const [x1, z1] = archCurvePts[s];
     const [x2, z2] = archCurvePts[s + 1];
@@ -294,7 +344,6 @@ for (let i = 0; i <= bays; i++) {
   }
 }
 
-// Longitudinal purlins & side rails
 for (const phi of [0, -PHI_MAX * 0.5, PHI_MAX * 0.5, -PHI_MAX, PHI_MAX]) {
   const px = R_ARCH * Math.sin(phi);
   const pz = Z_CENTER + R_ARCH * Math.cos(phi);
@@ -303,7 +352,32 @@ for (const phi of [0, -PHI_MAX * 0.5, PHI_MAX * 0.5, -PHI_MAX, PHI_MAX]) {
 addTubeBetween(toThree(-W / 2, 0, 0.2), toThree(-W / 2, L, 0.2), 0.016, steelMat, domeGroup);
 addTubeBetween(toThree(W / 2, 0, 0.2), toThree(W / 2, L, 0.2), 0.016, steelMat, domeGroup);
 
-// Front Sliding Door (1.2m x 2.0m — slid open to the left so user can walk inside!)
+// Rainwater collection gutters along both eaves + Da Lat storage tank at rear right!
+const gutterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.4, roughness: 0.35 });
+addTubeBetween(toThree(-W / 2 - 0.05, 0, H_SIDE - 0.03), toThree(-W / 2 - 0.05, L, H_SIDE - 0.03), 0.038, gutterMat, domeGroup);
+addTubeBetween(toThree(W / 2 + 0.05, 0, H_SIDE - 0.03), toThree(W / 2 + 0.05, L, H_SIDE - 0.03), 0.038, gutterMat, domeGroup);
+
+// Water Tank (Bồn thu nước mưa tưới nhỏ giọt Đà Lạt)
+const rainTank = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.55, 0.55, 1.35, 16),
+  new THREE.MeshStandardMaterial({ color: 0x0369a1, roughness: 0.35, metalness: 0.3 })
+);
+rainTank.position.copy(toThree(-3.9, 10.6, 0.68));
+rainTank.castShadow = true;
+domeGroup.add(rainTank);
+addTubeBetween(toThree(-W / 2 - 0.05, 10.6, H_SIDE - 0.03), toThree(-3.9, 10.6, 1.35), 0.032, gutterMat, domeGroup);
+
+// Entrance Signboard ("GREEN INFO - PILOT ĐÀ LẠT 1.500 m")
+addTubeBetween(toThree(-2.1, -1.0, 0), toThree(-2.1, -1.0, 1.45), 0.025, steelMat, domeGroup);
+const signBoard = new THREE.Mesh(
+  new THREE.BoxGeometry(1.15, 0.44, 0.04),
+  new THREE.MeshStandardMaterial({ map: makeSignTexture(), roughness: 0.4 })
+);
+signBoard.position.copy(toThree(-2.1, -1.0, 1.32));
+signBoard.rotation.y = 0.25;
+domeGroup.add(signBoard);
+
+// Front Sliding Door (slid open!)
 const doorW = 1.2, doorH = 2.0;
 addTubeBetween(toThree(-doorW / 2, 0, 0), toThree(-doorW / 2, 0, doorH), 0.022, steelMat, domeGroup);
 addTubeBetween(toThree(doorW / 2, 0, 0), toThree(doorW / 2, 0, doorH), 0.022, steelMat, domeGroup);
@@ -313,7 +387,7 @@ const doorLeaf = new THREE.Mesh(
   new THREE.BoxGeometry(doorW, doorH, 0.03),
   new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.4, roughness: 0.4, transparent: true, opacity: 0.72 })
 );
-doorLeaf.position.copy(toThree(-doorW * 1.05, -0.08, doorH / 2)); // Slid open!
+doorLeaf.position.copy(toThree(-doorW * 1.05, -0.08, doorH / 2));
 domeGroup.add(doorLeaf);
 
 // Semi-transparent 32-Mesh Cover Shell
@@ -350,7 +424,6 @@ domeGroup.add(doorLeaf);
   domeGroup.add(new THREE.Mesh(coverGeo, meshMat));
 }
 
-// Front & Rear End Mesh Panels (leaving doorway open at front!)
 function addEndWall(x0, x1, by, z0, z1) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), meshMat);
   m.position.copy(toThree((x0 + x1) / 2, by, (z0 + z1) / 2));
@@ -360,7 +433,7 @@ addEndWall(-W / 2, -doorW / 2, 0, 0.2, H_SIDE);
 addEndWall(doorW / 2, W / 2, 0, 0.2, H_SIDE);
 addEndWall(-W / 2, W / 2, L, 0.2, H_SIDE);
 
-// Visible Convex Guide Rails along bay ends (so user sees the rail track!)
+// Visible Convex Guide Rails
 const railMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.3 });
 for (const by of [0.5, 5.5, 6.5, 11.5]) {
   for (const sx of [-1, 1]) {
@@ -371,13 +444,12 @@ for (const by of [0.5, 5.5, 6.5, 11.5]) {
       pts.push(toThree(rx, by, rz));
     }
     const curve = new THREE.CatmullRomCurve3(pts);
-    const rMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, 0.015, 6, false), railMat);
-    domeGroup.add(rMesh);
+    domeGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 32, 0.015, 6, false), railMat));
   }
 }
 
 // =============================================================================
-// 6. REAL-TIME TELESCOPIC CURVED SOLAR PANELS (8 sliding meshes)
+// 6. REAL-TIME TELESCOPIC CURVED SOLAR PANELS
 // =============================================================================
 const matSolarInner = new THREE.MeshStandardMaterial({
   map: makeSolarTexture("#0891b2", "#e0f2fe"),
@@ -439,7 +511,7 @@ function createDynamicPanel(offset, uRest, uDeploy, sideSign, yS, yE, mat) {
     geo.attributes.position.needsUpdate = true;
     geo.computeVertexNormals();
   };
-  updateFn(1.0);
+  updateFn(0.0);
   slidingPanels.push(updateFn);
 }
 
@@ -451,9 +523,8 @@ for (const [yS, yE] of [[0.5, 5.5], [6.5, 11.5]]) {
 }
 
 // =============================================================================
-// 7. INTERIOR CANTALOUPE CULTIVATION (4 rows x 21 plants = 84 via InstancedMesh!)
+// 7. INTERIOR CANTALOUPE CULTIVATION (4 rows x 21 plants via InstancedMesh)
 // =============================================================================
-// Black weed-barrier beds
 const bedMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
 for (const [xs, xe] of [[-2.45, -0.75], [0.75, 2.45]]) {
   const bed = new THREE.Mesh(new THREE.BoxGeometry(xe - xs, 0.02, 10.4), bedMat);
@@ -469,7 +540,6 @@ for (const rx of rowXCoords) {
   addTubeBetween(toThree(rx, 0.0, 2.05), toThree(rx, 12.0, 2.05), 0.005, steelMat, domeGroup);
 }
 
-// Instanced 84 plants: Grow Bags, Stems, Leaves, Netted Cantaloupes!
 const totalPlants = 4 * 21;
 const bagInst = new THREE.InstancedMesh(
   new THREE.CylinderGeometry(0.11, 0.11, 0.25, 10),
@@ -492,7 +562,6 @@ const melonInst = new THREE.InstancedMesh(
 );
 melonInst.castShadow = true;
 
-// 6 leaves per plant = 504 instances!
 const leafGeo = new THREE.ConeGeometry(0.11, 0.24, 3);
 leafGeo.rotateX(Math.PI / 2);
 const leafInst = new THREE.InstancedMesh(
@@ -521,7 +590,6 @@ for (let r = 0; r < rowXCoords.length; r++) {
     dummy.updateMatrix();
     stemInst.setMatrixAt(pCounter, dummy.matrix);
 
-    // Fruit hanging nicely inward toward walkway
     dummy.position.set(base.x + inwardDir * 0.14, 0.88 + ((p % 3) - 1) * 0.04, base.z);
     dummy.scale.set(1, 1.1, 1);
     dummy.updateMatrix();
@@ -541,9 +609,8 @@ for (let r = 0; r < rowXCoords.length; r++) {
 domeGroup.add(bagInst, stemInst, melonInst, leafInst);
 
 // =============================================================================
-// 8. INTERACTIVE IOT HARDWARE PROPS INSIDE & OUTSIDE
+// 8. INTERACTIVE IOT HARDWARE PROPS
 // =============================================================================
-// ESP32 Edge Controller Cabinet (front left inside)
 const iotBox = new THREE.Mesh(
   new THREE.BoxGeometry(0.42, 0.56, 0.22),
   new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.3, roughness: 0.4 })
@@ -557,7 +624,6 @@ const iotLed = new THREE.Mesh(
 iotLed.position.copy(toThree(-2.55, 1.32, 1.42));
 domeGroup.add(iotLed);
 
-// MPPT + Battery Box below cabinet
 const battBox = new THREE.Mesh(
   new THREE.BoxGeometry(0.45, 0.32, 0.3),
   new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 })
@@ -565,7 +631,6 @@ const battBox = new THREE.Mesh(
 battBox.position.copy(toThree(-2.55, 1.2, 0.45));
 domeGroup.add(battBox);
 
-// Anemometer Weather Mast (outside right corner)
 addTubeBetween(toThree(3.5, 1.5, 0), toThree(3.5, 1.5, 2.7), 0.025, steelMat, domeGroup);
 const anemoRotor = new THREE.Group();
 anemoRotor.position.copy(toThree(3.5, 1.5, 2.75));
@@ -579,7 +644,6 @@ for (let k = 0; k < 3; k++) {
 }
 domeGroup.add(anemoRotor);
 
-// Soil Sensor Probe in bed
 const soilProbe = new THREE.Mesh(
   new THREE.CylinderGeometry(0.03, 0.02, 0.38, 8),
   new THREE.MeshStandardMaterial({ color: 0x0284c7 })
@@ -587,16 +651,13 @@ const soilProbe = new THREE.Mesh(
 soilProbe.position.copy(toThree(-1.1, 3.2, 0.25));
 domeGroup.add(soilProbe);
 
-// 3D Rain Particles (Active only during Rainstorm / Typhoon weather presets)
+// 3D Rain Particles
 const RAIN_COUNT = 900;
 const rainGeo = new THREE.BufferGeometry();
 const rainPos = new Float32Array(RAIN_COUNT * 6);
 const rainSeeds = [];
 for (let i = 0; i < RAIN_COUNT; i++) {
-  const rx = (Math.random() - 0.5) * 28;
-  const ry = Math.random() * 14;
-  const rz = (Math.random() - 0.5) * 32;
-  rainSeeds.push([rx, ry, rz, 0.45 + Math.random() * 0.4]);
+  rainSeeds.push([(Math.random() - 0.5) * 28, Math.random() * 14, (Math.random() - 0.5) * 32, 0.45 + Math.random() * 0.4]);
 }
 rainGeo.setAttribute("position", new THREE.BufferAttribute(rainPos, 3));
 const rainLines = new THREE.LineSegments(
@@ -607,16 +668,16 @@ rainLines.visible = false;
 scene.add(rainLines);
 
 // =============================================================================
-// 9. VIEWPOINTS, HOTSPOTS & MODALS DATA
+// 9. VIEWPOINTS & HOTSPOTS (DA LAT HIGHLAND EDITION)
 // =============================================================================
 const VIEWPOINTS = [
   {
     id: "overview",
-    name: "Toàn cảnh ngoài vòm",
+    name: "Toàn cảnh đồi Đà Lạt",
     pos: new THREE.Vector3(8.8, 4.4, -10.8),
     lookAt: new THREE.Vector3(0.0, 1.4, -0.5),
     walk: false,
-    narration: "Toàn cảnh nhà vòm nông điện Green Info kích thước 6 mét nhân 12 mét, gồm khung thép mạ kẽm và hệ thống pin mặt trời trượt lồng hai tầng.",
+    narration: "Toàn cảnh mô hình thí điểm Green Info tại cao nguyên Đà Lạt, kích thước 6 mét nhân 12 mét giữa thung lũng đồi thông, kết hợp máng thu nước mưa chống xói mòn.",
   },
   {
     id: "walk_entry",
@@ -624,7 +685,7 @@ const VIEWPOINTS = [
     pos: new THREE.Vector3(0.0, 1.62, -7.1),
     lookAt: new THREE.Vector3(0.0, 1.52, 2.0),
     walk: true,
-    narration: "Bạn đang đứng ngay trước cửa lùa nhà vòm. Hãy dùng bàn phím hoặc cần điều khiển trên màn hình để bước thẳng vào tham quan vườn dưa lưới.",
+    narration: "Bạn đang đứng ngay trước cửa lùa mở sẵn. Dùng bàn phím hoặc cần điều khiển trên điện thoại để bước thẳng vào bên trong vườn dưa lưới.",
   },
   {
     id: "interior_melon",
@@ -632,7 +693,7 @@ const VIEWPOINTS = [
     pos: new THREE.Vector3(0.0, 1.60, 0.2),
     lookAt: new THREE.Vector3(0.0, 1.35, 5.2),
     walk: true,
-    narration: "Không gian bên trong với 4 luống dưa lưới 84 gốc trên giá thể xơ dừa, tưới nhỏ giọt theo hàng và lưới chắn côn trùng 32 mắt.",
+    narration: "Bên trong nhà vòm là 4 luống dưa lưới 84 gốc trồng trên giá thể xơ dừa sạch, tưới nhỏ giọt từ bồn nước mưa thu hồi.",
   },
   {
     id: "solar_rail",
@@ -640,7 +701,7 @@ const VIEWPOINTS = [
     pos: new THREE.Vector3(5.6, 3.0, -3.2),
     lookAt: new THREE.Vector3(2.2, 2.4, -2.5),
     walk: false,
-    narration: "Cơ chế ray dẫn hướng lồi giúp hai tầng tấm pin cong trượt nhẹ từ vách đứng lên đỉnh mái vòm để che nắng đỉnh trưa và phát điện tự chủ.",
+    narration: "Cơ chế ray dẫn hướng lồi giúp tấm pin cong trượt từ vách đứng lên đỉnh mái để hấp thụ bức xạ trưa nắng gắt ở Đà Lạt thành điện sạch và giảm tích nhiệt nhà kính.",
   },
   {
     id: "iot_hub",
@@ -648,74 +709,89 @@ const VIEWPOINTS = [
     pos: new THREE.Vector3(-0.6, 1.55, -2.6),
     lookAt: new THREE.Vector3(-2.5, 1.15, -4.8),
     walk: false,
-    narration: "Tủ điều khiển biên sử dụng ESP32 tiêu thụ điện thấp, kết hợp ắc quy lưu trữ MPPT và các cảm biến vi khí hậu, tốc độ gió và dinh dưỡng đất.",
+    narration: "Tủ điều khiển biên IoT tiêu thụ điện thấp tích hợp ắc quy MPPT; định hướng thương mại hóa sẽ nâng cấp firmware bằng Rust để đạt độ an toàn Fail-Safe 24/7.",
   },
 ];
 
 const HOTSPOTS = [
   {
     id: "hs_solar",
+    num: 1,
     pos3d: toThree(1.4, 4.2, 3.55),
     label: "Tấm pin trượt lồng 2 tầng",
-    badge: "ĐỔI MỚI CƠ KHÍ & NĂNG LƯỢNG",
-    body: "Tấm pin cong chia 2 lớp lồng nhau (cách khung 8 cm và 13 cm), trượt từ vách hông lên đỉnh vòm khi nắng gắt >33°C hoặc mưa lớn, và thu gọn về vách khi nắng dịu hay gió bão.",
-    specs: ["2 Khu điều khiển độc lập", "Động cơ DC 24V", "Mục tiêu hạ nhiệt 2–6°C"],
+    badge: "ĐỔI MỚI CƠ KHÍ & HẠ BỨC XẠ ĐÀ LẠT",
+    body: "Tấm pin cong 2 lớp trượt từ vách hông lên đỉnh vòm vào trưa bức xạ cao ở Đà Lạt, hấp thụ năng lượng mặt trời phát điện thay vì để nhà kính tích nhiệt gây hiệu ứng đảo nhiệt.",
+    specs: ["Sáng sương 0% (100% PAR)", "Trưa nắng 100% (Giảm tích nhiệt)", "Động cơ DC 24V"],
   },
   {
     id: "hs_mesh",
+    num: 2,
     pos3d: toThree(3.0, 2.6, 1.35),
     label: "Lưới chắn côn trùng 32 Mesh",
     badge: "BẢO VỆ DỊCH HẠI CƠ HỌC",
-    body: "Bao quanh 100% vách nhà vòm bằng lưới 32 lỗ/inch vuông, giúp ngăn chặn hiệu quả bọ trĩ, rệp phấn và ruồi vàng xâm nhập mà vẫn thông gió tự nhiên.",
+    body: "Bao quanh toàn bộ vách nhà vòm bằng lưới 32 lỗ/inch vuông, ngăn chặn bọ trĩ, rệp phấn và ruồi vàng mà vẫn giữ độ thông thoáng đối lưu khí hậu cao nguyên.",
     specs: ["Ngăn sâu bọ cơ học", "Giảm thuốc BVTV", "Cửa lùa 1,2m × 2,0m"],
   },
   {
     id: "hs_melon",
+    num: 3,
     pos3d: toThree(1.1, 5.4, 1.15),
     label: "Canh tác dưa lưới nhỏ giọt",
-    badge: "MÔ HÌNH PILOT NGẮN NGÀY",
-    body: "84 gốc dưa lưới trồng trong túi giá thể xơ dừa sạch, tưới nhỏ giọt theo hàng. Chu kỳ 65–75 ngày giúp thu số liệu đối chứng sản lượng nhanh chóng.",
-    specs: ["Ngưỡng tối ưu 25–33°C", "Tránh sốc nhiệt >38°C", "4 Luống × 21 gốc"],
+    badge: "MÔ HÌNH PILOT 65–75 NGÀY",
+    body: "84 gốc dưa lưới trong túi giá thể xơ dừa sạch, tưới nhỏ giọt theo hàng. Tấm pin trượt che mưa đá/gió lạnh và điều tiết nhiệt độ ổn định quanh vùng tối ưu 25–33°C.",
+    specs: ["4 Luống × 21 gốc", "Giá thể xơ dừa", "Chống mưa đá/sương muối"],
   },
   {
     id: "hs_iot",
+    num: 4,
     pos3d: toThree(-2.55, 1.2, 1.55),
     label: "Tủ điều khiển biên AI & Fail-Safe",
-    badge: "ĐIỀU KHIỂN THÔNG MINH",
-    body: "Điều khiển lai 2 pha: Rule-Based theo ngưỡng sinh lý cây trồng ngay từ ngày đầu, kết hợp AI dự báo xu hướng nhiệt và lớp Fail-Safe ưu tiên ngắt khẩn cấp khi bão gió.",
-    specs: ["ESP32 Low-Power IoT", "Cổng API mở (Enfarm/RYNAN/Nextfarm)", "1 Dashboard tiếng Việt"],
+    badge: "ĐIỀU KHIỂN LAI & LỘ TRÌNH RUST",
+    body: "Giai đoạn đầu thử nghiệm dùng ESP32 Rule-Based + AI dự báo; giai đoạn thương mại hóa sẽ nâng cấp firmware bằng Rust (esp-rs/embassy) để đảm bảo an toàn bộ nhớ 24/7.",
+    specs: ["ESP32 Low-Power IoT", "Nâng cấp Rust (GĐ sau)", "Open API Dashboard"],
   },
   {
     id: "hs_wind",
+    num: 5,
     pos3d: toThree(3.5, 1.5, 2.85),
     label: "Trạm đo gió & Anemometer",
-    badge: "AN TOÀN KHÍ ĐỘNG HỌC",
-    body: "Liên tục đo tốc độ gió ngoài trời. Khi gió giật vượt ngưỡng an toàn, hệ thống lập tức bỏ qua lệnh che nắng và kéo toàn bộ pin thu gọn về vách đứng hạ tâm gió.",
+    badge: "AN TOÀN GIÓ LỐC CAO NGUYÊN",
+    body: "Theo dõi liên tục tốc độ gió vùng đèo/thung lũng Đà Lạt. Khi gió giật vượt ngưỡng, lệnh Fail-Safe ưu tiên kéo toàn bộ pin thu gọn về vách đứng hạ tâm gió.",
     specs: ["Ưu tiên ngắt cứng Fail-Safe", "Giảm lực nâng mái", "Hoạt động 24/7"],
   },
   {
     id: "hs_soil",
+    num: 6,
     pos3d: toThree(-1.1, 3.2, 0.55),
     label: "Cảm biến dinh dưỡng đất & EC",
-    badge: "KHẮC PHỤC THẤT THOÁT PHÂN BÓN",
-    body: "Định hướng kết nối chuẩn API mở/RS485 đo N-P-K, pH, EC và độ ẩm giá thể theo thời gian thực nhằm khắc phục tình trạng thất thoát 50–60% phân bón truyền thống.",
+    badge: "CHỐNG THẤT THOÁT PHÂN BÓN",
+    body: "Định hướng kết nối chuẩn API mở/RS485 đo N-P-K, pH, EC và độ ẩm giá thể thời gian thực, khắc phục tình trạng thất thoát 50–60% phân bón truyền thống.",
     specs: ["7 chỉ số đất thời gian thực", "Chuẩn Modbus/REST API", "Tưới châm phân đúng liều"],
+  },
+  {
+    id: "hs_rain",
+    num: 7,
+    pos3d: toThree(-3.9, 10.6, 1.45),
+    label: "Máng thu nước mưa chống xói mòn",
+    badge: "GIẢI PHÁP ĐẶC THÙ ĐÀ LẠT",
+    body: "Thu gom nước mưa từ mái vòm vào bồn chứa tái sử dụng cho tưới nhỏ giọt, giúp hạn chế tình trạng nước mái nhà kính chảy tràn gây ngập cục bộ và khô hạn mùa khô tại Đà Lạt.",
+    specs: ["Máng xối 2 bên hông", "Bồn chứa tái sử dụng", "Giảm xói mòn đất đồi"],
   },
 ];
 
 // =============================================================================
-// 10. CAMERA CONTROLLER (360° Drag Look + Fly-To + First-Person Walk + Joystick)
+// 10. CAMERA CONTROLLER (360° Drag + Pinch-Zoom + Walk + Mobile Gyroscope!)
 // =============================================================================
 let currentViewIdx = 0;
 let isWalkMode = false;
 let isAutoRotate = true;
 let isAutoWalk = false;
+let isGyroEnabled = false;
 
 let camPos = new THREE.Vector3().copy(VIEWPOINTS[0].pos);
 let camYaw = 0;
 let camPitch = 0;
 let orbitTarget = new THREE.Vector3().copy(VIEWPOINTS[0].lookAt);
-let orbitRadius = camPos.distanceTo(orbitTarget);
 
 function syncYawPitchFromLookAt(pos, target) {
   const dir = new THREE.Vector3().subVectors(target, pos).normalize();
@@ -723,15 +799,16 @@ function syncYawPitchFromLookAt(pos, target) {
   camPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -0.95, 0.95));
 }
 syncYawPitchFromLookAt(camPos, orbitTarget);
+camera.position.copy(camPos);
+camera.lookAt(orbitTarget);
 
-// Tween state
 let tweenActive = false;
 let tweenStart = 0;
-let tweenDur = 900;
-let twFromPos = new THREE.Vector3();
-let twToPos = new THREE.Vector3();
-let twFromTarget = new THREE.Vector3();
-let twToTarget = new THREE.Vector3();
+const tweenDur = 850;
+const twFromPos = new THREE.Vector3();
+const twToPos = new THREE.Vector3();
+const twFromTarget = new THREE.Vector3();
+const twToTarget = new THREE.Vector3();
 let twTargetWalk = false;
 
 function flyToView(viewId) {
@@ -742,7 +819,6 @@ function flyToView(viewId) {
 
   twFromPos.copy(camera.position);
   twToPos.copy(vp.pos);
-  // Compute current forward target for smooth interpolation
   const forward = new THREE.Vector3(
     -Math.sin(camYaw) * Math.cos(camPitch),
     Math.sin(camPitch),
@@ -764,49 +840,75 @@ function flyToView(viewId) {
     }
   }
   updateWalkUI();
-
-  // Highlight active nav item
   document.querySelectorAll(".nav-item[data-view]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === viewId);
   });
 }
 
-// Drag Look-around (Mouse + Touch)
-let isDragging = false;
+// Single-finger drag + Multi-touch Pinch-to-Zoom!
+const activePointers = new Map();
+let lastPinchDist = 0;
 let lastX = 0, lastY = 0;
 
 renderer.domElement.addEventListener("pointerdown", (e) => {
-  isDragging = true;
-  lastX = e.clientX;
-  lastY = e.clientY;
-  isAutoRotate = false;
-  document.getElementById("dock-autorotate").classList.remove("active");
-});
-
-window.addEventListener("pointermove", (e) => {
-  if (!isDragging || tweenActive) return;
-  const dx = e.clientX - lastX;
-  const dy = e.clientY - lastY;
-  lastX = e.clientX;
-  lastY = e.clientY;
-
-  const sens = isWalkMode ? 0.0038 : 0.0052;
-  camYaw += dx * sens * (isWalkMode ? 1 : -1);
-  camPitch = THREE.MathUtils.clamp(camPitch + dy * sens * (isWalkMode ? 1 : -1), -1.15, 1.15);
-  if (!isWalkMode) {
-    // Recompute camera position orbiting around orbitTarget
-    const dist = camPos.distanceTo(orbitTarget);
-    const dir = new THREE.Vector3(
-      -Math.sin(camYaw) * Math.cos(camPitch),
-      Math.sin(camPitch),
-      -Math.cos(camYaw) * Math.cos(camPitch)
-    );
-    camPos.copy(orbitTarget).sub(dir.multiplyScalar(dist));
-    camPos.y = Math.max(0.4, camPos.y);
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (activePointers.size === 1) {
+    lastX = e.clientX;
+    lastY = e.clientY;
+    isAutoRotate = false;
+    document.getElementById("dock-autorotate").classList.remove("active");
+  } else if (activePointers.size === 2) {
+    const pts = Array.from(activePointers.values());
+    lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
   }
 });
 
-window.addEventListener("pointerup", () => { isDragging = false; });
+window.addEventListener("pointermove", (e) => {
+  if (!activePointers.has(e.pointerId) || tweenActive) return;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (activePointers.size === 2 && !isWalkMode) {
+    const pts = Array.from(activePointers.values());
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const delta = lastPinchDist - dist;
+    lastPinchDist = dist;
+    const dir = new THREE.Vector3().subVectors(camPos, orbitTarget);
+    const newLen = THREE.MathUtils.clamp(dir.length() + delta * 0.035, 2.5, 24.0);
+    camPos.copy(orbitTarget).add(dir.normalize().multiplyScalar(newLen));
+    return;
+  }
+
+  if (activePointers.size === 1) {
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    const sens = isWalkMode ? 0.0042 : 0.0052;
+    camYaw += dx * sens * (isWalkMode ? 1 : -1);
+    camPitch = THREE.MathUtils.clamp(camPitch + dy * sens * (isWalkMode ? 1 : -1), -1.15, 1.15);
+    if (!isWalkMode) {
+      const dist = camPos.distanceTo(orbitTarget);
+      const dir = new THREE.Vector3(
+        -Math.sin(camYaw) * Math.cos(camPitch),
+        Math.sin(camPitch),
+        -Math.cos(camYaw) * Math.cos(camPitch)
+      );
+      camPos.copy(orbitTarget).sub(dir.multiplyScalar(dist));
+      camPos.y = Math.max(0.4, camPos.y);
+    }
+  }
+});
+
+function clearPointer(e) {
+  activePointers.delete(e.pointerId);
+  if (activePointers.size === 1) {
+    const rem = Array.from(activePointers.values())[0];
+    lastX = rem.x;
+    lastY = rem.y;
+  }
+}
+window.addEventListener("pointerup", clearPointer);
+window.addEventListener("pointercancel", clearPointer);
 
 renderer.domElement.addEventListener("wheel", (e) => {
   if (isWalkMode || tweenActive) return;
@@ -816,12 +918,11 @@ renderer.domElement.addEventListener("wheel", (e) => {
   camPos.copy(orbitTarget).add(dir.normalize().multiplyScalar(dist));
 }, { passive: false });
 
-// Keyboard WASD / Arrow keys
 const keys = {};
 window.addEventListener("keydown", (e) => { keys[e.code] = true; });
 window.addEventListener("keyup", (e) => { keys[e.code] = false; });
 
-// Mobile Touch Virtual Joystick
+// Mobile Virtual Joystick
 let joyX = 0, joyY = 0;
 const joyBase = document.getElementById("joystick-base");
 const joyKnob = document.getElementById("joystick-knob");
@@ -864,11 +965,37 @@ joyBase.addEventListener("pointerup", (e) => {
   joyKnob.style.top = "28px";
 });
 
+// Mobile Gyroscope Tilt-to-Look
+let gyroBaseAlpha = null;
+function onDeviceOrientation(e) {
+  if (!isGyroEnabled || !isWalkMode || e.alpha == null || e.beta == null) return;
+  if (gyroBaseAlpha === null) gyroBaseAlpha = e.alpha;
+  const dAlpha = THREE.MathUtils.degToRad(e.alpha - gyroBaseAlpha);
+  const pitchDeg = THREE.MathUtils.clamp(e.beta - 75, -45, 45);
+  camYaw = dAlpha + Math.PI; // Facing into dome
+  camPitch = THREE.MathUtils.degToRad(pitchDeg);
+}
+window.addEventListener("deviceorientation", onDeviceOrientation);
+
+document.getElementById("btn-gyro").addEventListener("click", async (e) => {
+  if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+    try {
+      const perm = await DeviceOrientationEvent.requestPermission();
+      if (perm !== "granted") return;
+    } catch (_) {
+      return;
+    }
+  }
+  isGyroEnabled = !isGyroEnabled;
+  gyroBaseAlpha = null;
+  e.currentTarget.classList.toggle("active", isGyroEnabled);
+});
+
 // =============================================================================
-// 11. SOLAR PANEL ANIMATION & WEATHER SIMULATION
+// 11. SOLAR PANEL ANIMATION & DA LAT WEATHER SIMULATION
 // =============================================================================
-let currentDeploy = 1.0;
-let targetDeploy = 1.0;
+let currentDeploy = 0.0;
+let targetDeploy = 0.0;
 let currentWeather = "morning";
 
 function setWeather(mode) {
@@ -880,19 +1007,21 @@ function setWeather(mode) {
   if (mode === "morning") {
     targetDeploy = 0.0;
     rainLines.visible = false;
-    sunLight.intensity = 2.0;
+    sunLight.intensity = 1.95;
     sunLight.color.setHex(0xfffbeb);
-    hemiLight.intensity = 0.92;
-    scene.fog.color.setHex(0xdbeafe);
-    updateTelemetry(28.5, 100, 8, 0.8, "Thu gọn vách (100% PAR)", "tele-ok");
+    hemiLight.intensity = 0.95;
+    scene.fog.color.setHex(0xe0f2fe);
+    scene.fog.density = 0.013; // Soft Da Lat morning mist
+    updateTelemetry(19.5, 100, 9, 0.8, "Thu gọn (Đón nắng sớm)", "tele-ok");
   } else if (mode === "heatwave") {
     targetDeploy = 1.0;
     rainLines.visible = false;
-    sunLight.intensity = 3.1;
+    sunLight.intensity = 3.05;
     sunLight.color.setHex(0xffedd5);
-    hemiLight.intensity = 0.88;
+    hemiLight.intensity = 0.90;
     scene.fog.color.setHex(0xfef3c7);
-    updateTelemetry(34.2, 62, 6, 2.9, "Trượt phủ nóc (Hạ ~5°C)", "tele-warn");
+    scene.fog.density = 0.006;
+    updateTelemetry(31.2, 62, 7, 3.0, "Phủ nóc (Giảm bức xạ 37°C)", "tele-warn");
   } else if (mode === "rainstorm") {
     targetDeploy = 1.0;
     rainLines.visible = true;
@@ -900,7 +1029,8 @@ function setWeather(mode) {
     sunLight.color.setHex(0xe2e8f0);
     hemiLight.intensity = 0.72;
     scene.fog.color.setHex(0xcbd5e1);
-    updateTelemetry(26.0, 45, 22, 0.6, "Phủ mái che mưa dông", "tele-ok");
+    scene.fog.density = 0.016;
+    updateTelemetry(18.2, 42, 24, 0.6, "Che mưa đá & thu nước", "tele-ok");
   } else if (mode === "typhoon") {
     targetDeploy = 0.0;
     rainLines.visible = true;
@@ -908,7 +1038,8 @@ function setWeather(mode) {
     sunLight.color.setHex(0xcbd5e1);
     hemiLight.intensity = 0.65;
     scene.fog.color.setHex(0x94a3b8);
-    updateTelemetry(25.2, 40, 58, 0.3, "FAIL-SAFE: Thu gọn bão!", "tele-danger");
+    scene.fog.density = 0.020;
+    updateTelemetry(17.0, 38, 56, 0.3, "FAIL-SAFE: Thu gọn bão!", "tele-danger");
   }
   document.getElementById("solar-slider").value = Math.round(targetDeploy * 100);
   document.getElementById("solar-pct").textContent = `${Math.round(targetDeploy * 100)}%`;
@@ -928,11 +1059,10 @@ document.getElementById("solar-slider").addEventListener("input", (e) => {
   const val = Number(e.target.value);
   targetDeploy = val / 100.0;
   document.getElementById("solar-pct").textContent = `${val}%`;
-  // Dynamically reflect shading trade-off
   const par = Math.round(100 - 38 * targetDeploy);
-  const pv = 0.7 + 2.2 * targetDeploy;
-  const temp = currentWeather === "heatwave" ? 39.6 - 5.4 * targetDeploy : 30.0 - 2.2 * targetDeploy;
-  updateTelemetry(temp, par, currentWeather === "typhoon" ? 58 : 9, pv, val > 50 ? "Che phủ mái vòm" : "Thu gọn vách hông", val > 50 ? "tele-warn" : "tele-ok");
+  const pv = 0.7 + 2.3 * targetDeploy;
+  const temp = currentWeather === "heatwave" ? 37.2 - 6.0 * targetDeploy : 24.5 - 2.5 * targetDeploy;
+  updateTelemetry(temp, par, currentWeather === "typhoon" ? 56 : 9, pv, val > 50 ? "Che phủ mái vòm" : "Thu gọn vách hông", val > 50 ? "tele-warn" : "tele-ok");
 });
 
 document.querySelectorAll(".wp-chip").forEach((btn) => {
@@ -946,7 +1076,7 @@ const hotspotsLayer = document.getElementById("hotspots-layer");
 const hsElements = HOTSPOTS.map((hs) => {
   const btn = document.createElement("button");
   btn.className = "hotspot-btn";
-  btn.innerHTML = `<span class="hotspot-ring"></span><span class="hotspot-label">${hs.label}</span>`;
+  btn.innerHTML = `<span class="hotspot-ring"><span class="hotspot-num">${hs.num}</span></span><span class="hotspot-label">${hs.label}</span>`;
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     showInfoCard(hs.badge, hs.label, hs.body, hs.specs);
@@ -967,9 +1097,15 @@ document.getElementById("btn-close-info").addEventListener("click", () => {
   document.getElementById("info-card").classList.add("hidden");
 });
 
+document.getElementById("btn-toggle-labels").addEventListener("click", (e) => {
+  const shown = document.body.classList.toggle("show-mobile-labels");
+  e.currentTarget.style.background = shown ? "#16a34a" : "rgba(3, 105, 161, 0.88)";
+});
+
 function updateHotspotsProjection() {
   const w = window.innerWidth, h = window.innerHeight;
   const projVec = new THREE.Vector3();
+  const yMax = w <= 860 ? h - 195 : h - 85;
   for (const { hs, btn } of hsElements) {
     projVec.copy(hs.pos3d).project(camera);
     if (projVec.z > 1.0 || projVec.z < -1.0) {
@@ -978,7 +1114,7 @@ function updateHotspotsProjection() {
     }
     const sx = (projVec.x * 0.5 + 0.5) * w;
     const sy = (-projVec.y * 0.5 + 0.5) * h;
-    if (sx < 40 || sx > w - 40 || sy < 70 || sy > h - 85) {
+    if (sx < 34 || sx > w - 34 || sy < 95 || sy > yMax) {
       btn.style.display = "none";
     } else {
       btn.style.display = "flex";
@@ -1015,7 +1151,6 @@ function updateWalkUI() {
   autoBtn.textContent = isAutoWalk ? "⏹ Dừng bước" : "▶ Tự bước vào vườn";
 }
 
-// Navigation items & quick buttons
 document.querySelectorAll("[data-view]").forEach((el) => {
   el.addEventListener("click", () => {
     flyToView(el.dataset.view);
@@ -1034,7 +1169,6 @@ document.getElementById("btn-close-map").addEventListener("click", () => {
   document.getElementById("map-drawer").classList.add("hidden");
 });
 
-// Video Story Modal
 const videoModal = document.getElementById("video-modal");
 const storyVideo = document.getElementById("story-video");
 function openVideoModal() {
@@ -1051,7 +1185,6 @@ document.getElementById("btn-close-video").addEventListener("click", () => {
   videoModal.classList.add("hidden");
 });
 
-// Weather Panel Toggle
 const weatherPanel = document.getElementById("weather-panel");
 document.querySelectorAll("[data-action='toggle-weather-bar'], #btn-toggle-weather-top").forEach((el) => {
   el.addEventListener("click", () => {
@@ -1063,22 +1196,22 @@ document.getElementById("btn-close-wp").addEventListener("click", () => {
   weatherPanel.classList.add("hidden");
 });
 
-// Text Modals (Intro & Team)
 const textModal = document.getElementById("text-modal");
 document.querySelectorAll("[data-action='modal-intro']").forEach((el) => {
   el.addEventListener("click", () => {
-    document.getElementById("tm-title").textContent = "GIỚI THIỆU DỰ ÁN GREEN INFO (VÒNG 2)";
+    document.getElementById("tm-title").textContent = "GIỚI THIỆU PILOT ĐÀ LẠT & LỘ TRÌNH PHẦN CỨNG RUST";
     document.getElementById("tm-body").innerHTML = `
-      <p><b>Green Info</b> là hệ thống nhà vòm nông điện thông minh (Agri-PV) tích hợp pin quang điện trượt lồng hai tầng và trí tuệ nhân tạo cho cây trồng giá trị cao (thử nghiệm với dưa lưới 65–75 ngày).</p>
+      <p><b>Green Info – Pilot Đà Lạt (Lâm Đồng, 1.500 m):</b> Giải quyết bài toán tích nhiệt nhà kính ("hiệu ứng đảo nhiệt"), mưa đá/gió lốc cao nguyên và thoát nước tràn mái nhà kính tại Đà Lạt.</p>
       <h4>3 Đổi mới cốt lõi:</h4>
       <ul>
-        <li><b>Cơ chế trượt lồng 2 tầng trên ray lồi:</b> Thu gọn sát vách hông khi nắng dịu để cây đón 100% ánh sáng quang hợp PAR (hoặc hạ tâm gió khi bão), trượt lên đỉnh mái khi nắng gắt 38–40°C hoặc mưa dông.</li>
-        <li><b>Điều khiển lai (Rule-Based + Predictive AI) & Fail-Safe:</b> Chạy ổn định ngay từ ngày đầu mà không cần chờ dữ liệu lớn, ưu tiên ngắt an toàn khi có gió bão.</li>
-        <li><b>Kiến trúc API mở (Open Agri-Hub):</b> Hợp nhất dữ liệu vi khí hậu, dinh dưỡng đất (NPK/EC) và sâu bệnh trên 1 Dashboard tiếng Việt duy nhất.</li>
+        <li><b>Mái vòm trượt lồng 2 tầng:</b> Sáng sương thu gọn vách (100% PAR); trưa nắng bức xạ cao trượt phủ mái hấp thụ nhiệt phát điện; gặp gió lốc đèo tự thu gọn an toàn (Fail-Safe).</li>
+        <li><b>Thu gom nước mưa chống xói mòn:</b> Hệ máng xối hai bên dẫn nước mái vào bồn tái sử dụng tưới nhỏ giọt.</li>
+        <li><b>Lộ trình tích hợp phần cứng (Rust):</b> Giai đoạn demo hiện tại tập trung hoàn thiện mô phỏng Web 3D & tối ưu thuật toán. Giai đoạn chế tạo phần cứng thực tế sẽ lập trình vi điều khiển nhúng & cổng Agri-Hub Gateway bằng ngôn ngữ <b>Rust (esp-rs / embassy &amp; Axum)</b> để đạt an toàn bộ nhớ tuyệt đối, tiết kiệm pin và vận hành bền bỉ 24/7.</li>
       </ul>
-      <p><i>Lưu ý: Các thông số nhiệt độ/PV hiển thị trên trang web là mô phỏng nguyên lý vận hành phục vụ trực quan hóa.</i></p>
+      <p><i>Lưu ý: Các thông số trên Web 3D là mô phỏng nguyên lý phục vụ trực quan hóa.</i></p>
     `;
     textModal.classList.remove("hidden");
+    if (window.innerWidth <= 860) sidebar.classList.add("collapsed");
   });
 });
 
@@ -1086,7 +1219,7 @@ document.querySelectorAll("[data-action='modal-team']").forEach((el) => {
   el.addEventListener("click", () => {
     document.getElementById("tm-title").textContent = "ĐỘI THI HỆ SINH THÁI SỐ – HUFLIT 2026";
     document.getElementById("tm-body").innerHTML = `
-      <p><b>Cuộc thi:</b> HUFLIT Innovation & Startup 2026 (Vòng 2 – Bảng Đổi Mới Sáng Tạo)</p>
+      <p><b>Cuộc thi:</b> HUFLIT Innovation &amp; Startup 2026 (Vòng 2 – Bảng Đổi Mới Sáng Tạo)</p>
       <h4>Thành viên đội thi:</h4>
       <ul>
         <li><b>Nguyễn Quốc Huy (Trưởng nhóm)</b> – 24DH113268 – Khoa Công Nghệ Thông Tin</li>
@@ -1098,11 +1231,11 @@ document.querySelectorAll("[data-action='modal-team']").forEach((el) => {
       <p><b>Liên hệ:</b> nqhuy08112006@gmail.com  •  0902637150</p>
     `;
     textModal.classList.remove("hidden");
+    if (window.innerWidth <= 860) sidebar.classList.add("collapsed");
   });
 });
 document.getElementById("btn-close-tm").addEventListener("click", () => textModal.classList.add("hidden"));
 
-// Bottom 7-button dock wiring
 document.getElementById("dock-prev").addEventListener("click", () => {
   const prev = (currentViewIdx - 1 + VIEWPOINTS.length) % VIEWPOINTS.length;
   flyToView(VIEWPOINTS[prev].id);
@@ -1120,6 +1253,7 @@ document.getElementById("dock-walk").addEventListener("click", () => {
       flyToView("walk_entry");
       return;
     }
+    if (window.innerWidth <= 860) weatherPanel.classList.add("hidden");
   } else {
     isAutoWalk = false;
     orbitTarget.copy(camPos).add(
@@ -1166,7 +1300,6 @@ document.getElementById("btn-auto-walk").addEventListener("click", () => {
 // =============================================================================
 // 14. MAIN RENDER LOOP
 // =============================================================================
-// Initial preset: Bright morning -> smooth demo transition to overview
 setWeather("morning");
 setTimeout(() => setWeather("heatwave"), 1100);
 
@@ -1186,21 +1319,18 @@ function animate(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  // 1. Smoothly animate telescopic solar panels toward targetDeploy
   if (Math.abs(currentDeploy - targetDeploy) > 0.001) {
     currentDeploy += (targetDeploy - currentDeploy) * Math.min(1, dt * 3.8);
     for (const fn of slidingPanels) fn(currentDeploy);
   }
 
-  // 2. Anemometer spin & tree wind sway
-  const windSpeed = currentWeather === "typhoon" ? 18.0 : currentWeather === "rainstorm" ? 8.0 : 2.2;
+  const windSpeed = currentWeather === "typhoon" ? 18.0 : currentWeather === "rainstorm" ? 8.0 : 2.5;
   anemoRotor.rotation.y += windSpeed * dt;
-  const swayAmp = currentWeather === "typhoon" ? 0.09 : currentWeather === "rainstorm" ? 0.04 : 0.012;
-  treeCrowns.forEach((cr, idx) => {
+  const swayAmp = currentWeather === "typhoon" ? 0.08 : currentWeather === "rainstorm" ? 0.035 : 0.012;
+  pineCrowns.forEach((cr, idx) => {
     cr.rotation.z = Math.sin(now * 0.0025 + idx) * swayAmp;
   });
 
-  // 3. Rain particle animation
   if (rainLines.visible) {
     const pos = rainGeo.attributes.position.array;
     const windTilt = currentWeather === "typhoon" ? -0.45 : -0.15;
@@ -1220,7 +1350,6 @@ function animate(now) {
     rainGeo.attributes.position.needsUpdate = true;
   }
 
-  // 4. Camera Tween / Walk / Orbit Update
   camera.up.set(0, 1, 0);
   if (tweenActive) {
     const t = Math.min(1.0, (now - tweenStart) / tweenDur);
@@ -1237,7 +1366,6 @@ function animate(now) {
       updateWalkUI();
     }
   } else if (isWalkMode) {
-    // First-person walking movement
     let moveFwd = (keys["KeyW"] || keys["ArrowUp"] ? 1 : 0) - (keys["KeyS"] || keys["ArrowDown"] ? 1 : 0);
     let moveRight = (keys["KeyD"] || keys["ArrowRight"] ? 1 : 0) - (keys["KeyA"] || keys["ArrowLeft"] ? 1 : 0);
     if (Math.abs(joyY) > 0.1 || Math.abs(joyX) > 0.1) {
@@ -1254,7 +1382,6 @@ function animate(now) {
       const rightZ = -Math.sin(camYaw);
       camPos.x += (fwdX * moveFwd + rightX * moveRight) * spd;
       camPos.z += (fwdZ * moveFwd + rightZ * moveRight) * spd;
-      // Keep cleanly in aisle when inside dome, or free outdoors
       camPos.z = THREE.MathUtils.clamp(camPos.z, -11.0, 5.2);
       if (camPos.z > -6.1) {
         camPos.x = THREE.MathUtils.clamp(camPos.x, -0.58, 0.58);
@@ -1293,7 +1420,6 @@ function animate(now) {
   renderer.render(scene, camera);
 }
 
-// Hide loader cleanly once first frame renders
 requestAnimationFrame((t) => {
   animate(t);
   const veil = document.getElementById("loader-veil");
