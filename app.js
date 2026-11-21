@@ -49,13 +49,15 @@ function getTrackPoint(u, offset, sideSign) {
 // 2. REALISTIC PBR & PHOTOREALISTIC TEXTURE SUITE (Local assets/textures)
 // =============================================================================
 const texLoader = new THREE.TextureLoader();
+const isMobileDevice = window.innerWidth <= 860;
+const TEX_ANISO = isMobileDevice ? 2 : 4;
 
 function loadTex(filename, repX = 1, repY = 1, isSRGB = true) {
   const tex = texLoader.load(`./assets/textures/${filename}`);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(repX, repY);
-  tex.anisotropy = 4;
+  tex.anisotropy = TEX_ANISO;
   tex.colorSpace = isSRGB ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   return tex;
 }
@@ -150,10 +152,9 @@ const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerH
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
-const isMobileDevice = window.innerWidth <= 860;
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.5 : 2.0));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.25 : 1.5));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.06;
 wrap.appendChild(renderer.domElement);
@@ -183,7 +184,7 @@ scene.add(hemiLight);
 const sunLight = new THREE.DirectionalLight(0xfffbeb, 2.35);
 sunLight.position.set(11, 16, -9);
 sunLight.castShadow = true;
-const shadowRes = isMobileDevice ? 1024 : 2048;
+const shadowRes = isMobileDevice ? 768 : 1536;
 sunLight.shadow.mapSize.set(shadowRes, shadowRes);
 sunLight.shadow.camera.near = 2;
 sunLight.shadow.camera.far = 48;
@@ -225,9 +226,9 @@ function terrainHeight(x, z) {
   return flatBlend * Math.max(-0.6, (baseSlope + undulation) * frontValley);
 }
 
-// 4A. Sculpted 104x104 Highland Meadow Terrain with vertex-color earth/clover/moss variation (~21k tris, 1 draw call!)
+// 4A. Sculpted 72x72 Highland Meadow Terrain with vertex-color earth/clover/moss variation (~10.3k tris, 1 draw call!)
 {
-  const segs = 104;
+  const segs = 72;
   const span = 240;
   const tGeo = new THREE.PlaneGeometry(span, span, segs, segs);
   tGeo.rotateX(-Math.PI / 2);
@@ -341,7 +342,7 @@ scene.add(pathMesh);
 
 // 4C. 3 Continuous Sculpted 360° Da Lat Mountain Ridges + Valley Mist (replaces geometric cones; only 4 draw calls!)
 function createMountainBelt(rIn, rPeak, rOut, maxH, seed, lowRgb, midRgb, crestRgb) {
-  const segA = 192, segR = 9;
+  const segA = 112, segR = 6;
   const verts = [], cols = [], uvs = [], idx = [];
   const cLow = new THREE.Color(lowRgb), cMid = new THREE.Color(midRgb), cTop = new THREE.Color(crestRgb);
   const cTmp = new THREE.Color();
@@ -553,7 +554,8 @@ function attachFoliageWind(mat, ampScale = 1.0) {
   const pineCrownsInst = new THREE.InstancedMesh(crownGeo, crownMat, treeTransforms.length);
   pineTrunks.castShadow = true;
   pineTrunks.receiveShadow = true;
-  pineCrownsInst.castShadow = true;
+  // Disable alpha-tested shadow depth shader on pine boughs for rapid mobile Early-Z shadow pass!
+  pineCrownsInst.castShadow = false;
 
   const dummy = new THREE.Object3D();
   const pineTint = new THREE.Color();
@@ -574,16 +576,16 @@ function attachFoliageWind(mat, ampScale = 1.0) {
   if (pineCrownsInst.instanceColor) pineCrownsInst.instanceColor.needsUpdate = true;
   scene.add(pineTrunks, pineCrownsInst);
 
-  // 4F. 720 Photorealistic Crossed-Blade Grass Tufts around courtyard edge, path & hills (1 draw call, castShadow = false!)
+  // 4F. 480 Photorealistic Crossed-Blade Grass Tufts around courtyard edge, path & hills (1 draw call, castShadow = false!)
   const gPos = [], gNorm = [], gUv = [], gIdx = [];
   for (let pI = 0; pI < 3; pI++) {
     const yaw = (pI * Math.PI) / 3.0;
     const cY = Math.cos(yaw), sY = Math.sin(yaw);
     const bi = gPos.length / 3;
-    const wHalf = 0.28;
+    const wHalf = 0.34;
     const pts = [
       [-wHalf, 0.0, 0.0], [wHalf, 0.0, 0.0],
-      [wHalf * 1.12, 0.56, 0.04], [-wHalf * 1.12, 0.56, 0.04],
+      [wHalf * 1.12, 0.60, 0.04], [-wHalf * 1.12, 0.60, 0.04],
     ];
     const uvG = [[0, 0], [1, 0], [1, 1], [0, 1]];
     for (let k = 0; k < 4; k++) {
@@ -610,21 +612,21 @@ function attachFoliageWind(mat, ampScale = 1.0) {
   });
   attachFoliageWind(tuftMat, 0.85);
 
-  const tuftCount = 720;
+  const tuftCount = 480;
   const grassInst = new THREE.InstancedMesh(tuftGeo, tuftMat, tuftCount);
   grassInst.castShadow = false;
   grassInst.receiveShadow = true;
 
   let placed = 0;
   while (placed < tuftCount) {
-    let gx, gz, sc = 0.55 + nextRand() * 0.68;
-    if (placed < 320) {
+    let gx, gz, sc = 0.60 + nextRand() * 0.72;
+    if (placed < 240) {
       // Dense organic rim along wider red basalt courtyard & entrance concrete path edge
       const th = nextRand() * Math.PI * 2;
       const edgeF = 0.88 + nextRand() * 0.32;
       gx = Math.cos(th) * 6.35 * edgeF;
       gz = Math.sin(th) * 9.75 * edgeF;
-    } else if (placed < 430) {
+    } else if (placed < 320) {
       // Clumps flanking entrance concrete walkway edges
       const sideS = nextRand() > 0.5 ? 1 : -1;
       gx = sideS * (0.78 + nextRand() * 0.95);
@@ -754,30 +756,49 @@ const meshGableMat = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
   depthWrite: false,
 });
-// Clear UV Polyethylene (PE) Greenhouse Glazing Film over arched roof (waterproof rain-shedding roof)
-const peRoofFilmMat = new THREE.MeshPhysicalMaterial({
+// Clear UV Polyethylene (PE) Greenhouse Glazing Film (fast MeshStandardMaterial with IBL sky reflection)
+const peRoofFilmMat = new THREE.MeshStandardMaterial({
   color: 0xe8f6ff,
   transparent: true,
-  opacity: 0.24,
-  roughness: 0.11,
-  metalness: 0.0,
-  clearcoat: 1.0,
-  clearcoatRoughness: 0.06,
-  reflectivity: 0.92,
+  opacity: 0.22,
+  roughness: 0.12,
+  metalness: 0.05,
+  envMapIntensity: 1.15,
   side: THREE.DoubleSide,
   depthWrite: false,
 });
 
+// Batch static pipes/columns/arches/conduits into 1 InstancedMesh per material (cuts ~260 draw calls!)
+const staticTubeBatches = new Map();
+const _tubeUp = new THREE.Vector3(0, 1, 0);
+const _tubeDir = new THREE.Vector3();
+const _tubeMid = new THREE.Vector3();
+const _tubeQuat = new THREE.Quaternion();
+const _tubeScale = new THREE.Vector3();
+
 function addTubeBetween(p1, p2, r, mat, parent) {
-  const dir = new THREE.Vector3().subVectors(p2, p1);
-  const len = dir.length();
+  _tubeDir.subVectors(p2, p1);
+  const len = _tubeDir.length();
   if (len < 1e-4) return;
-  const geo = new THREE.CylinderGeometry(r, r, len, 10);
-  const m = new THREE.Mesh(geo, mat);
-  m.position.copy(p1).add(p2).multiplyScalar(0.5);
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
-  m.castShadow = true;
-  parent.add(m);
+  if (parent === domeGroup || parent === windStation) {
+    _tubeMid.copy(p1).add(p2).multiplyScalar(0.5);
+    _tubeQuat.setFromUnitVectors(_tubeUp, _tubeDir.normalize());
+    _tubeScale.set(r, len, r);
+    const m = new THREE.Matrix4().compose(_tubeMid, _tubeQuat, _tubeScale);
+    let bucket = staticTubeBatches.get(mat);
+    if (!bucket) {
+      bucket = { mat, matrices: [] };
+      staticTubeBatches.set(mat, bucket);
+    }
+    bucket.matrices.push(m);
+    return;
+  }
+  const geo = new THREE.CylinderGeometry(r, r, len, 8);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(p1).add(p2).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(_tubeUp, _tubeDir.normalize());
+  mesh.castShadow = !isMobileDevice;
+  parent.add(mesh);
 }
 
 const bays = 8;
@@ -787,26 +808,35 @@ for (let s = 0; s <= 24; s++) {
   archCurvePts.push([R_ARCH * Math.sin(phi), Z_CENTER + R_ARCH * Math.cos(phi)]);
 }
 
-for (let i = 0; i <= bays; i++) {
-  const by = (i * L) / bays;
-  for (const sx of [-1, 1]) {
-    const xCol = sx * (W / 2.0);
-    const ft = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.125, 0.26, 14), concMat);
-    ft.position.copy(toThree(xCol, by, 0.12));
-    ft.castShadow = true;
-    ft.receiveShadow = true;
-    domeGroup.add(ft);
-    addTubeBetween(toThree(xCol, by, 0.0), toThree(xCol, by, H_SIDE), 0.023, steelMat, domeGroup);
-    // Steel base collar + eave gusset clamp
-    const clamp = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.06, 10), clampMat);
-    clamp.position.copy(toThree(xCol, by, H_SIDE));
-    domeGroup.add(clamp);
+{
+  const pierGeo = new THREE.CylinderGeometry(0.11, 0.125, 0.26, 12);
+  const clampGeo = new THREE.CylinderGeometry(0.032, 0.032, 0.06, 8);
+  const pierInst = new THREE.InstancedMesh(pierGeo, concMat, (bays + 1) * 2);
+  const clampInst = new THREE.InstancedMesh(clampGeo, clampMat, (bays + 1) * 2);
+  pierInst.castShadow = true;
+  pierInst.receiveShadow = true;
+  const dMat = new THREE.Matrix4();
+  let cIdx = 0;
+  for (let i = 0; i <= bays; i++) {
+    const by = (i * L) / bays;
+    for (const sx of [-1, 1]) {
+      const xCol = sx * (W / 2.0);
+      dMat.makeTranslation(xCol, 0.12, by - HALF_L);
+      pierInst.setMatrixAt(cIdx, dMat);
+      dMat.makeTranslation(xCol, H_SIDE, by - HALF_L);
+      clampInst.setMatrixAt(cIdx, dMat);
+      cIdx++;
+      addTubeBetween(toThree(xCol, by, 0.0), toThree(xCol, by, H_SIDE), 0.023, steelMat, domeGroup);
+    }
+    for (let s = 0; s < archCurvePts.length - 1; s++) {
+      const [x1, z1] = archCurvePts[s];
+      const [x2, z2] = archCurvePts[s + 1];
+      addTubeBetween(toThree(x1, by, z1), toThree(x2, by, z2), 0.022, steelMat, domeGroup);
+    }
   }
-  for (let s = 0; s < archCurvePts.length - 1; s++) {
-    const [x1, z1] = archCurvePts[s];
-    const [x2, z2] = archCurvePts[s + 1];
-    addTubeBetween(toThree(x1, by, z1), toThree(x2, by, z2), 0.022, steelMat, domeGroup);
-  }
+  pierInst.instanceMatrix.needsUpdate = true;
+  clampInst.instanceMatrix.needsUpdate = true;
+  domeGroup.add(pierInst, clampInst);
 }
 
 for (const phi of [0, -PHI_MAX * 0.5, PHI_MAX * 0.5, -PHI_MAX, PHI_MAX]) {
@@ -1010,35 +1040,31 @@ const railMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8
 for (const by of [0.5, 5.5, 6.5, 11.5]) {
   for (const sx of [-1, 1]) {
     const pts = [];
-    for (let k = 0; k <= 36; k++) {
-      const u = (5.15 * k) / 36;
+    for (let k = 0; k <= 24; k++) {
+      const u = (5.15 * k) / 24;
       const [rx, rz] = getTrackPoint(u, 0.06, sx);
       pts.push(toThree(rx, by, rz));
     }
     const curve = new THREE.CatmullRomCurve3(pts);
-    domeGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 32, 0.016, 8, false), railMat));
+    domeGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.016, 6, false), railMat));
   }
 }
 
 // =============================================================================
 // 6. REAL-TIME MONOCRYSTALLINE TELESCOPIC CURVED SOLAR PANELS
 // =============================================================================
-const matSolarInner = new THREE.MeshPhysicalMaterial({
+const matSolarInner = new THREE.MeshStandardMaterial({
   map: texSolarInner,
-  metalness: 0.42,
+  metalness: 0.44,
   roughness: 0.16,
-  clearcoat: 0.92,
-  clearcoatRoughness: 0.08,
-  reflectivity: 0.9,
+  envMapIntensity: 1.25,
   side: THREE.DoubleSide,
 });
-const matSolarOuter = new THREE.MeshPhysicalMaterial({
+const matSolarOuter = new THREE.MeshStandardMaterial({
   map: texSolarOuter,
-  metalness: 0.45,
+  metalness: 0.48,
   roughness: 0.14,
-  clearcoat: 0.95,
-  clearcoatRoughness: 0.07,
-  reflectivity: 0.92,
+  envMapIntensity: 1.30,
   side: THREE.DoubleSide,
 });
 
@@ -1228,7 +1254,8 @@ const leafInst = new THREE.InstancedMesh(
   }),
   totalPlants * 9
 );
-leafInst.castShadow = true;
+// Keep opaque pots casting shadows, skip 756 alpha-cutout leaf discard checks in shadow depth pass!
+leafInst.castShadow = false;
 
 const dummy = new THREE.Object3D();
 let pCounter = 0;
@@ -1455,7 +1482,7 @@ const pyraBase = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.025, 1
 pyraBase.position.copy(toThree(3.85, -0.45, 3.27));
 const pyraGlass = new THREE.Mesh(
   new THREE.SphereGeometry(0.028, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
-  new THREE.MeshPhysicalMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.72, roughness: 0.06, clearcoat: 1.0 })
+  new THREE.MeshStandardMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.72, roughness: 0.08, envMapIntensity: 1.25 })
 );
 pyraGlass.position.copy(toThree(3.85, -0.45, 3.28));
 windStation.add(pyraBase, pyraGlass);
@@ -1466,6 +1493,20 @@ const soilProbe = new THREE.Mesh(
 );
 soilProbe.position.copy(toThree(-1.1, 3.2, 0.29));
 domeGroup.add(soilProbe);
+
+// Flush ALL queued static tubes (frame columns, arches, purlins, gable bars, IoT stand, wind mast) into <= 4 InstancedMesh calls!
+{
+  const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 8, 1);
+  for (const { mat, matrices } of staticTubeBatches.values()) {
+    const inst = new THREE.InstancedMesh(unitCyl, mat, matrices.length);
+    for (let i = 0; i < matrices.length; i++) inst.setMatrixAt(i, matrices[i]);
+    inst.instanceMatrix.needsUpdate = true;
+    inst.castShadow = mat === steelMat || mat === gutterMat;
+    inst.receiveShadow = false;
+    domeGroup.add(inst);
+  }
+  staticTubeBatches.clear();
+}
 
 // 3D Rain Particles
 const RAIN_COUNT = 900;
@@ -1912,7 +1953,7 @@ const hsElements = HOTSPOTS.map((hs) => {
     showInfoCard(hs.badge, hs.label, hs.body, hs.specs);
   });
   hotspotsLayer.appendChild(btn);
-  return { hs, btn };
+  return { hs, btn, shown: true, lastX: -9999, lastY: -9999 };
 });
 
 function showInfoCard(badge, title, body, specs = []) {
@@ -1932,24 +1973,40 @@ document.getElementById("btn-toggle-labels").addEventListener("click", (e) => {
   e.currentTarget.classList.toggle("active", shown);
 });
 
+let winW = window.innerWidth;
+let winH = window.innerHeight;
+const _projVec = new THREE.Vector3();
+
 function updateHotspotsProjection() {
-  const w = window.innerWidth, h = window.innerHeight;
-  const projVec = new THREE.Vector3();
+  const w = winW, h = winH;
   const yMax = w <= 860 ? h - 195 : h - 85;
-  for (const { hs, btn } of hsElements) {
-    projVec.copy(hs.pos3d).project(camera);
-    if (projVec.z > 1.0 || projVec.z < -1.0) {
-      btn.style.display = "none";
+  for (let i = 0; i < hsElements.length; i++) {
+    const item = hsElements[i];
+    _projVec.copy(item.hs.pos3d).project(camera);
+    if (_projVec.z > 1.0 || _projVec.z < -1.0) {
+      if (item.shown) {
+        item.btn.style.display = "none";
+        item.shown = false;
+      }
       continue;
     }
-    const sx = (projVec.x * 0.5 + 0.5) * w;
-    const sy = (-projVec.y * 0.5 + 0.5) * h;
+    const sx = (_projVec.x * 0.5 + 0.5) * w;
+    const sy = (-_projVec.y * 0.5 + 0.5) * h;
     if (sx < 34 || sx > w - 34 || sy < 95 || sy > yMax) {
-      btn.style.display = "none";
+      if (item.shown) {
+        item.btn.style.display = "none";
+        item.shown = false;
+      }
     } else {
-      btn.style.display = "flex";
-      btn.style.left = `${sx}px`;
-      btn.style.top = `${sy}px`;
+      if (!item.shown) {
+        item.btn.style.display = "flex";
+        item.shown = true;
+      }
+      if (Math.abs(sx - item.lastX) > 0.25 || Math.abs(sy - item.lastY) > 0.25) {
+        item.btn.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) translate(-50%, -50%)`;
+        item.lastX = sx;
+        item.lastY = sy;
+      }
     }
   }
 }
@@ -2133,16 +2190,21 @@ setWeather("morning");
 setTimeout(() => setWeather("heatwave"), 1100);
 
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  winW = window.innerWidth;
+  winH = window.innerHeight;
+  camera.aspect = winW / winH;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  if (window.innerWidth <= 860) {
+  renderer.setSize(winW, winH);
+  if (winW <= 860) {
     sidebar.classList.add("collapsed");
   }
 });
 
 let lastTime = performance.now();
 let currentDoorOpen = 0.0;
+const _curTarget = new THREE.Vector3();
+const _lookFwd = new THREE.Vector3();
+const _orbitDir = new THREE.Vector3();
 function animate(now) {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, (now - lastTime) / 1000);
@@ -2190,10 +2252,10 @@ function animate(now) {
     const t = Math.min(1.0, (now - tweenStart) / tweenDur);
     const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     camPos.lerpVectors(twFromPos, twToPos, e);
-    const curTarget = new THREE.Vector3().lerpVectors(twFromTarget, twToTarget, e);
+    _curTarget.lerpVectors(twFromTarget, twToTarget, e);
     camera.position.copy(camPos);
-    camera.lookAt(curTarget);
-    syncYawPitchFromLookAt(camPos, curTarget);
+    camera.lookAt(_curTarget);
+    syncYawPitchFromLookAt(camPos, _curTarget);
     if (t >= 1.0) {
       tweenActive = false;
       isWalkMode = twTargetWalk;
@@ -2230,22 +2292,22 @@ function animate(now) {
       }
     }
     camera.position.copy(camPos);
-    const lookFwd = new THREE.Vector3(
+    _lookFwd.set(
       -Math.sin(camYaw) * Math.cos(camPitch),
       Math.sin(camPitch),
       -Math.cos(camYaw) * Math.cos(camPitch)
     );
-    camera.lookAt(camPos.x + lookFwd.x, camPos.y + lookFwd.y, camPos.z + lookFwd.z);
+    camera.lookAt(camPos.x + _lookFwd.x, camPos.y + _lookFwd.y, camPos.z + _lookFwd.z);
   } else {
     if (isAutoRotate) {
       camYaw += 0.14 * dt;
       const dist = camPos.distanceTo(orbitTarget);
-      const dir = new THREE.Vector3(
+      _orbitDir.set(
         -Math.sin(camYaw) * Math.cos(camPitch),
         Math.sin(camPitch),
         -Math.cos(camYaw) * Math.cos(camPitch)
       );
-      camPos.copy(orbitTarget).sub(dir.multiplyScalar(dist));
+      camPos.copy(orbitTarget).sub(_orbitDir.multiplyScalar(dist));
     }
     camera.position.copy(camPos);
     camera.lookAt(orbitTarget);
