@@ -404,25 +404,30 @@ for (const byEnd of [0, L]) {
   }
 }
 
-// Internal Eave Rainwater Gutters (Tucked INSIDE columns at x = ±2.91m, 9.5cm clear of sliding rail/panels!)
+// Sky-Open Eave Rainwater Gutters (spanning x = ±2.84..3.00m, PE roof stops at ±2.84m -> rain falls straight into open trough; panels slide outside at x ≥ ±3.06m!)
 const gutterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.45, roughness: 0.28, side: THREE.DoubleSide });
-function addInternalUGutter(sx) {
-  const gx = sx * (W / 2.0 - 0.09); // ±2.91 m (strictly INSIDE ±3.00m columns!)
-  const wG = 0.10, hG = 0.085, zBot = H_SIDE - 0.09;
-  const gLen = L - 0.12;
-  const basePlate = new THREE.Mesh(new THREE.BoxGeometry(wG, 0.01, gLen), gutterMat);
+function addOpenTopEaveGutter(sx) {
+  const xIn = sx * 2.84;
+  const xOut = sx * 2.995;
+  const gx = (xIn + xOut) / 2.0;
+  const wG = Math.abs(xOut - xIn); // 0.155 m wide open top trough
+  const zBot = 1.94;
+  const hIn = 0.275; // Inner wall seals flush up to PE arch at z = 2.215 m
+  const hOut = 0.11; // Outer wall sits at z = 2.05 m (inside ±3.06m rail)
+  const gLen = L - 0.10;
+  const basePlate = new THREE.Mesh(new THREE.BoxGeometry(wG, 0.012, gLen), gutterMat);
   basePlate.position.copy(toThree(gx, gLen / 2, zBot));
-  const innerLip = new THREE.Mesh(new THREE.BoxGeometry(0.01, hG, gLen), gutterMat);
-  innerLip.position.copy(toThree(gx - sx * (wG / 2), gLen / 2, zBot + hG / 2));
-  const outerLock = new THREE.Mesh(new THREE.BoxGeometry(0.012, hG + 0.015, gLen), steelMat);
-  outerLock.position.copy(toThree(gx + sx * (wG / 2), gLen / 2, zBot + hG / 2));
+  const innerLip = new THREE.Mesh(new THREE.BoxGeometry(0.012, hIn, gLen), gutterMat);
+  innerLip.position.copy(toThree(xIn, gLen / 2, zBot + hIn / 2));
+  const outerLock = new THREE.Mesh(new THREE.BoxGeometry(0.012, hOut, gLen), steelMat);
+  outerLock.position.copy(toThree(xOut, gLen / 2, zBot + hOut / 2));
   domeGroup.add(basePlate, innerLip, outerLock);
 }
-addInternalUGutter(-1);
-addInternalUGutter(1);
+addOpenTopEaveGutter(-1);
+addOpenTopEaveGutter(1);
 
 // Rear cross-collector & downspout at Y = 11.88m (safely BEHIND Khu 2 solar panels stopping at Y = 11.5m!)
-addTubeBetween(toThree(W / 2 - 0.09, 11.88, H_SIDE - 0.09), toThree(-(W / 2 - 0.09), 11.88, H_SIDE - 0.09), 0.028, gutterMat, domeGroup);
+addTubeBetween(toThree(2.92, 11.88, 1.93), toThree(-2.92, 11.88, 1.93), 0.028, gutterMat, domeGroup);
 
 const tankMat = new THREE.MeshStandardMaterial({
   map: texTankHdpe,
@@ -439,7 +444,7 @@ domeGroup.add(rainTank);
 const tankLid = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.07, 16), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 }));
 tankLid.position.copy(toThree(-3.9, 11.65, 1.43));
 domeGroup.add(tankLid);
-addTubeBetween(toThree(-(W / 2 - 0.09), 11.88, H_SIDE - 0.09), toThree(-3.9, 11.65, 1.38), 0.032, gutterMat, domeGroup);
+addTubeBetween(toThree(-2.92, 11.88, 1.93), toThree(-3.9, 11.65, 1.38), 0.032, gutterMat, domeGroup);
 addTubeBetween(toThree(-3.9, 11.65, 0.14), toThree(-2.5, 11.2, 0.14), 0.022, new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 }), domeGroup);
 
 // Entrance Signboard ("GREEN INFO - PILOT ĐÀ LẠT 1.500 m")
@@ -478,8 +483,9 @@ doorGroup.add(doorHandle);
 domeGroup.add(doorGroup);
 
 // Physically accurate Dalat Hybrid Cladding:
-// 1) Vertical sidewalls (Z = 0.22..2.0m): 32-Mesh Insect Netting for cross-ventilation
-// 2) Curved vault roof (Z = 2.0..3.6m): Smooth Waterproof UV PE Film draining into internal gutters at x = ±2.91m!
+// 1) Vertical sidewalls (Z = 0.22..2.0m): 32-Mesh Insect Netting at x = ±3.00m
+// 2) Curved vault roof PE film stops at x = ±2.84m (phiPeMax) with a vertical drip flange INTO the open gutter trough!
+const PHI_PE_MAX = Math.asin(2.84 / R_ARCH);
 for (const sx of [-1, 1]) {
   const swGeo = new THREE.PlaneGeometry(L, H_SIDE - 0.2);
   const swMesh = new THREE.Mesh(swGeo, meshMat);
@@ -493,13 +499,13 @@ for (const sx of [-1, 1]) {
   for (let j = 0; j <= ySteps; j++) {
     const by = (j * L) / ySteps;
     const vCoord = j / ySteps;
-    // Left gutter drip tuck -> arch curve -> right gutter drip tuck
-    const rowPts = [[-W / 2.0 + 0.09, H_SIDE - 0.06]];
+    // PE edge drops neatly into the open gutter trough (x = ±2.85m, z = 2.06m) -> NEVER covers top of gutter!
+    const rowPts = [[-2.85, 2.06]];
     for (let i = 0; i <= phiSteps; i++) {
-      const phi = -PHI_MAX + (2 * PHI_MAX * i) / phiSteps;
+      const phi = -PHI_PE_MAX + (2 * PHI_PE_MAX * i) / phiSteps;
       rowPts.push([R_ARCH * Math.sin(phi), Z_CENTER + R_ARCH * Math.cos(phi) + 0.008]);
     }
-    rowPts.push([W / 2.0 - 0.09, H_SIDE - 0.06]);
+    rowPts.push([2.85, 2.06]);
     for (let k = 0; k < rowPts.length; k++) {
       const pt = toThree(rowPts[k][0], by, rowPts[k][1]);
       roofVerts.push(pt.x, pt.y, pt.z);
@@ -1045,10 +1051,10 @@ const HOTSPOTS = [
     id: "hs_rain",
     num: 7,
     pos3d: toThree(-3.9, 11.65, 1.45),
-    label: "Máng xối âm chống va chạm pin",
-    badge: "THU NƯỚC MƯA TÁCH HÀNH LANG PIN",
-    body: "Màng PE mái dẫn nước vào cặp máng xối âm gắn phía trong tim cột thép (x = ±2,91 m), tách hoàn toàn với ray trượt pin ngoài cột (6–13,5 cm) và gom ra cuối nhà (y = 11,88 m) về bồn chứa.",
-    specs: ["Máng âm trong cột ±2,91 m", "Thoát cuối nhà (sau Khu 2)", "0% va chạm ray trượt pin"],
+    label: "Máng xối hở trên chống va chạm pin",
+    badge: "THU NƯỚC MƯA CHUẨN TRỌNG LỰC",
+    body: "Màng PE mái vòm dừng tại x = ±2,84 m và rủ mép trực tiếp vào lòng máng xối hở trên (x = ±2,84–3,00 m), hứng trọn nước mưa từ mái PE và tấm pin mà vẫn nằm hoàn toàn bên trong ray trượt (6–13,5 cm).",
+    specs: ["Mái PE dừng ở ±2,84 m", "Máng hở trên ±2,84–3,00 m", "0% va chạm ray trượt pin"],
   },
 ];
 
@@ -1478,7 +1484,7 @@ document.querySelectorAll("[data-action='modal-intro']").forEach((el) => {
       <h4>3 Đổi mới cốt lõi:</h4>
       <ul>
         <li><b>Mái vòm trượt lồng 2 tầng:</b> Sáng sương thu gọn vách (100% PAR); trưa nắng bức xạ cao trượt phủ mái hấp thụ nhiệt phát điện; gặp gió lốc đèo tự thu gọn an toàn (Fail-Safe).</li>
-        <li><b>Mái PE kín nước &amp; Máng xối âm chống va chạm pin:</b> Vòm mái trên bọc màng PE UV dẫn nước vào cặp máng xối âm đặt phía trong cột thép (<code>x = ±2,91 m</code>), tách biệt hoàn toàn hành lang trượt pin (<code>6–13,5 cm</code>) và gom ra cuối nhà (<code>y = 11,88 m</code>) về bồn tái sử dụng.</li>
+        <li><b>Mái PE kín nước &amp; Máng xối hở trên:</b> Màng PE vòm trên dừng tại <code>x = ±2,84 m</code> đổ thẳng vào lòng máng xối hở trên (<code>x = ±2,84–3,00 m</code>), tách biệt hoàn toàn hành lang trượt pin ngoài cột (<code>6–13,5 cm</code>) và xả cuối nhà về bồn chứa.</li>
         <li><b>Lộ trình tích hợp phần cứng (Rust):</b> Giai đoạn demo hiện tại tập trung hoàn thiện mô phỏng Web 3D & tối ưu thuật toán. Giai đoạn chế tạo phần cứng thực tế sẽ lập trình vi điều khiển nhúng & cổng Agri-Hub Gateway bằng ngôn ngữ <b>Rust (esp-rs / embassy &amp; Axum)</b> để đạt an toàn bộ nhớ tuyệt đối, tiết kiệm pin và vận hành bền bỉ 24/7.</li>
       </ul>
       <p><i>Lưu ý: Các thông số trên Web 3D là mô phỏng nguyên lý phục vụ trực quan hóa.</i></p>
