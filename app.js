@@ -79,15 +79,17 @@ const texWeedMatBump = loadTex("weed_mat_bump.jpg", 4, 24, false);
 const texConcrete = loadTex("concrete.jpg", 4, 7, true);
 const texConcreteBump = loadTex("concrete_bump.jpg", 4, 7, false);
 const texConcretePath = loadTex("concrete.jpg", 1, 6, true);
-const texBasalt = loadTex("basalt_soil.jpg", 5, 8, true);
-const texGrass = loadTex("grass_dalat.jpg", 36, 36, true);
-const texGalvSteel = loadTex("galv_steel.jpg", 1, 3, true);
-const texTankHdpe = loadTex("tank_hdpe.jpg", 2, 1, true);
-const texIotPanel = loadTex("iot_panel.png", 1, 1, true);
-texIotPanel.wrapS = THREE.ClampToEdgeWrapping;
-texIotPanel.wrapT = THREE.ClampToEdgeWrapping;
-const texPineBark = loadTex("pine_bark.jpg", 2, 2, true);
-const texPineNeedles = loadTex("pine_needles.jpg", 3, 2, true);
+const texBasalt = loadTex("basalt_soil.jpg", 5, 7, true);
+const texBasaltBump = loadTex("basalt_soil_bump.jpg", 5, 7, false);
+const texGrass = loadTex("grass_dalat.jpg", 42, 42, true);
+const texGrassBump = loadTex("grass_dalat_bump.jpg", 42, 42, false);
+const texPineBark = loadTex("pine_bark.jpg", 2, 4, true);
+const texPineBranch = loadTex("pine_branch.png", 1, 1, true);
+texPineBranch.wrapS = THREE.ClampToEdgeWrapping;
+texPineBranch.wrapT = THREE.ClampToEdgeWrapping;
+const texGrassTuft = loadTex("grass_tuft.png", 1, 1, true);
+texGrassTuft.wrapS = THREE.ClampToEdgeWrapping;
+texGrassTuft.wrapT = THREE.ClampToEdgeWrapping;
 
 function makeSkyTexture() {
   const c = document.createElement("canvas");
@@ -131,18 +133,25 @@ function makeSignTexture() {
   return tex;
 }
 
+const texGalvSteel = loadTex("galv_steel.jpg", 1, 3, true);
+const texTankHdpe = loadTex("tank_hdpe.jpg", 2, 1, true);
+const texIotPanel = loadTex("iot_panel.png", 1, 1, true);
+texIotPanel.wrapS = THREE.ClampToEdgeWrapping;
+texIotPanel.wrapT = THREE.ClampToEdgeWrapping;
+
 // =============================================================================
 // 3. SCENE, RENDERER, PMREM ENVIRONMENT & LIGHTING
 // =============================================================================
 const wrap = document.getElementById("canvas-wrap");
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0xe0f2fe, 0.010);
+scene.fog = new THREE.FogExp2(0xe0f2fe, 0.0085);
 
-const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 240);
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 380);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const isMobileDevice = window.innerWidth <= 860;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.5 : 2.0));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -166,15 +175,15 @@ wrap.appendChild(renderer.domElement);
 }
 
 const skyMat = new THREE.MeshBasicMaterial({ map: makeSkyTexture(), side: THREE.BackSide, fog: false });
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(135, 24, 16), skyMat));
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(265, 24, 16), skyMat));
 
-const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x3f6212, 0.85);
+const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x365314, 0.88);
 scene.add(hemiLight);
 
 const sunLight = new THREE.DirectionalLight(0xfffbeb, 2.35);
 sunLight.position.set(11, 16, -9);
 sunLight.castShadow = true;
-const shadowRes = window.innerWidth <= 860 ? 1024 : 2048;
+const shadowRes = isMobileDevice ? 1024 : 2048;
 sunLight.shadow.mapSize.set(shadowRes, shadowRes);
 sunLight.shadow.camera.near = 2;
 sunLight.shadow.camera.far = 48;
@@ -187,25 +196,131 @@ sunLight.shadow.bias = -0.0006;
 scene.add(sunLight);
 
 // =============================================================================
-// 4. DA LAT HIGHLAND ENVIRONMENT (Basalt Terraces, Pine Trees, Mountain Ridges)
+// 4. PHOTOREALISTIC DA LAT HIGHLAND VALLEY (Mobile-Optimized InstancedMesh + Sculpted Terrain)
 // =============================================================================
-// Highland grassy meadow base with real foliage texture
-const groundMesh = new THREE.Mesh(
-  new THREE.CircleGeometry(125, 48),
-  new THREE.MeshStandardMaterial({ map: texGrass, color: 0xd9f99d, roughness: 0.94, metalness: 0.0 })
-);
-groundMesh.rotation.x = -Math.PI / 2;
-groundMesh.receiveShadow = true;
-scene.add(groundMesh);
+const smoothstep = (e0, e1, x) => {
+  const t = THREE.MathUtils.clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+  return t * t * (3.0 - 2.0 * t);
+};
 
-// Red volcanic basalt highland soil terrace surrounding the greenhouse pad
-const basaltTerrace = new THREE.Mesh(
-  new THREE.BoxGeometry(10.8, 0.03, 17.5),
-  new THREE.MeshStandardMaterial({ map: texBasalt, bumpMap: texBasalt, bumpScale: 0.018, roughness: 0.95 })
-);
-basaltTerrace.position.set(0, 0.012, 0);
-basaltTerrace.receiveShadow = true;
-scene.add(basaltTerrace);
+function ridgedHillFbm(x, z) {
+  const n1 = Math.sin(x * 0.042 + 0.5) * Math.cos(z * 0.038 - 0.4);
+  const n2 = Math.sin(x * 0.088 - z * 0.072 + 1.4) * 0.52;
+  const n3 = Math.cos(x * 0.165 + z * 0.145 - 0.9) * 0.24;
+  return 0.5 + 0.34 * (n1 + n2 + n3);
+}
+
+// Keep greenhouse pad, weather mast, tank & walkway strictly level at y = 0; roll organically into hills outside!
+function terrainHeight(x, z) {
+  const dx = Math.max(0, Math.abs(x) - 5.4);
+  const dz = z < -19.2 ? -19.2 - z : z > 8.2 ? z - 8.2 : 0.0;
+  const dPad = Math.hypot(dx, dz);
+  if (dPad <= 0.001) return 0.0;
+  const flatBlend = smoothstep(0.0, 9.5, dPad);
+  const r = Math.hypot(x, z);
+  const baseSlope = Math.pow(Math.min(1.0, Math.max(0.0, (r - 12.0) / 85.0)), 1.28) * 14.5;
+  const undulation = (ridgedHillFbm(x, z) - 0.38) * (4.8 + r * 0.055);
+  // Keep gentle sunny valley corridor open toward front approach (-Z)
+  const frontValley = 1.0 - 0.52 * Math.exp(-Math.pow(x / 18.0, 2)) * smoothstep(-5.0, -45.0, z);
+  return flatBlend * Math.max(-0.6, (baseSlope + undulation) * frontValley);
+}
+
+// 4A. Sculpted 104x104 Highland Meadow Terrain with vertex-color earth/clover/moss variation (~21k tris, 1 draw call!)
+{
+  const segs = 104;
+  const span = 240;
+  const tGeo = new THREE.PlaneGeometry(span, span, segs, segs);
+  tGeo.rotateX(-Math.PI / 2);
+  const pos = tGeo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const cTmp = new THREE.Color();
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const y = terrainHeight(x, z);
+    pos.setY(i, y);
+
+    const macro = ridgedHillFbm(x * 1.45 + 17.0, z * 1.45 - 11.0);
+    const micro = 0.5 + 0.5 * Math.sin(x * 0.27 + z * 0.19) * Math.cos(z * 0.31 - x * 0.17);
+    // Warm earthy humus near farm courtyard rim; vibrant sunny olive on swells; deep pine moss in hollows
+    const dxB = Math.max(0, Math.abs(x) - 4.7);
+    const dzB = Math.max(0, Math.abs(z + 0.2) - 8.2);
+    const nearCourt = 1.0 - smoothstep(0.4, 3.6, Math.hypot(dxB, dzB));
+    const hillAlt = smoothstep(1.5, 13.0, y);
+
+    const rCol = 0.78 + macro * 0.20 + nearCourt * 0.16 - hillAlt * 0.10;
+    const gCol = 0.86 + micro * 0.16 - nearCourt * 0.14 - hillAlt * 0.06;
+    const bCol = 0.72 + micro * 0.10 - nearCourt * 0.16 + hillAlt * 0.14;
+    cTmp.setRGB(rCol, gCol, bCol);
+    colors[i * 3] = cTmp.r;
+    colors[i * 3 + 1] = cTmp.g;
+    colors[i * 3 + 2] = cTmp.b;
+  }
+  tGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  tGeo.computeVertexNormals();
+
+  const groundMat = new THREE.MeshStandardMaterial({
+    map: texGrass,
+    bumpMap: texGrassBump,
+    bumpScale: 0.032,
+    vertexColors: true,
+    roughness: 0.94,
+    metalness: 0.0,
+  });
+  const groundMesh = new THREE.Mesh(tGeo, groundMat);
+  groundMesh.receiveShadow = true;
+  scene.add(groundMesh);
+}
+
+// 4B. Organic Contoured Red Basalt Courtyard Apron (replaces hard rectangle -> slopes neatly into meadow grass!)
+{
+  const rings = 14, radSegs = 64;
+  const rx = 5.65, rz = 8.95;
+  const bVerts = [], bUvs = [], bIdx = [];
+  for (let rI = 0; rI <= rings; rI++) {
+    const f = rI / rings;
+    for (let aI = 0; aI <= radSegs; aI++) {
+      const th = (aI / radSegs) * Math.PI * 2;
+      // Organic scalloped shoreline wobble only on outer 45% of terrace so inner pad stays cleanly covered
+      const wobble = 1.0 + smoothstep(0.45, 1.0, f) * (0.09 * Math.sin(th * 5.0 + 0.6) + 0.06 * Math.cos(th * 9.0 - 1.1));
+      const bx = Math.cos(th) * rx * f * wobble;
+      const bz = Math.sin(th) * rz * f * wobble;
+      // Superellipse squaring so courtyard hugs greenhouse nicely with rounded corners
+      const sq = 1.0 / Math.pow(Math.pow(Math.abs(Math.cos(th)), 3.2) + Math.pow(Math.abs(Math.sin(th)), 3.2), 1.0 / 3.2);
+      const px = Math.cos(th) * rx * f * wobble * (0.68 + 0.32 * sq);
+      const pz = Math.sin(th) * rz * f * wobble * (0.68 + 0.32 * sq);
+      // Level +0.015 inside courtyard, dipping smoothly below grass surface at rim for Z-feathered edge!
+      const py = f < 0.72 ? 0.014 : THREE.MathUtils.lerp(0.014, -0.032, smoothstep(0.72, 1.0, f));
+      bVerts.push(px, py, pz);
+      bUvs.push((px + rx) / (2 * rx), (pz + rz) / (2 * rz));
+    }
+  }
+  for (let rI = 0; rI < rings; rI++) {
+    for (let aI = 0; aI < radSegs; aI++) {
+      const a = rI * (radSegs + 1) + aI;
+      const b = a + 1;
+      const c = a + radSegs + 2;
+      const d2 = a + radSegs + 1;
+      bIdx.push(a, b, c, a, c, d2);
+    }
+  }
+  const bGeo = new THREE.BufferGeometry();
+  bGeo.setAttribute("position", new THREE.Float32BufferAttribute(bVerts, 3));
+  bGeo.setAttribute("uv", new THREE.Float32BufferAttribute(bUvs, 2));
+  bGeo.setIndex(bIdx);
+  bGeo.computeVertexNormals();
+  const basaltMat = new THREE.MeshStandardMaterial({
+    map: texBasalt,
+    bumpMap: texBasaltBump,
+    bumpScale: 0.038,
+    roughness: 0.96,
+    metalness: 0.02,
+  });
+  const basaltTerrace = new THREE.Mesh(bGeo, basaltMat);
+  basaltTerrace.receiveShadow = true;
+  scene.add(basaltTerrace);
+}
 
 // Poured industrial concrete dome foundation pad & entry walkway
 const padMesh = new THREE.Mesh(
@@ -224,58 +339,362 @@ pathMesh.position.set(0, 0.02, -12.5);
 pathMesh.receiveShadow = true;
 scene.add(pathMesh);
 
-// Rolling Da Lat Mountain Ridges around 360° horizon
-const mtnGroup = new THREE.Group();
-const mtnMatNear = new THREE.MeshStandardMaterial({ map: texGrass, color: 0x166534, roughness: 0.95 });
-const mtnMatFar = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.95 });
-for (let i = 0; i < 18; i++) {
-  const ang = (i / 18) * Math.PI * 2;
-  const rDist = 52 + (i % 3) * 14;
-  const h = 11 + ((i * 7) % 10);
-  const w = 20 + ((i * 5) % 12);
-  const hill = new THREE.Mesh(new THREE.ConeGeometry(w, h, 8), i % 2 === 0 ? mtnMatNear : mtnMatFar);
-  hill.position.set(Math.cos(ang) * rDist, h * 0.42, Math.sin(ang) * rDist);
-  hill.scale.set(1.4, 1.0, 1.0);
-  mtnGroup.add(hill);
-}
-scene.add(mtnGroup);
+// 4C. 3 Continuous Sculpted 360° Da Lat Mountain Ridges + Valley Mist (replaces geometric cones; only 4 draw calls!)
+function createMountainBelt(rIn, rPeak, rOut, maxH, seed, lowRgb, midRgb, crestRgb) {
+  const segA = 192, segR = 9;
+  const verts = [], cols = [], uvs = [], idx = [];
+  const cLow = new THREE.Color(lowRgb), cMid = new THREE.Color(midRgb), cTop = new THREE.Color(crestRgb);
+  const cTmp = new THREE.Color();
 
-// Da Lat Three-Needle Pine Trees (Bark & Needle textures)
-const pineGroup = new THREE.Group();
-const trunkMat = new THREE.MeshStandardMaterial({ map: texPineBark, bumpMap: texPineBark, bumpScale: 0.02, roughness: 0.94 });
-const pineLeafMat1 = new THREE.MeshStandardMaterial({ map: texPineNeedles, color: 0x15803d, roughness: 0.88 });
-const pineLeafMat2 = new THREE.MeshStandardMaterial({ map: texPineNeedles, color: 0x166534, roughness: 0.90 });
-const pineCoords = [
-  [-9.5, -8.5], [-13.0, -2.0], [-11.0, 7.5], [-16.0, 12.0],
-  [9.5, -7.5], [12.5, 2.0], [11.0, 9.5], [16.5, -13.0],
-  [-6.5, 14.5], [6.5, 14.5], [-18.0, -14.0], [18.0, 13.0],
-];
-const pineCrowns = [];
-for (let idx = 0; idx < pineCoords.length; idx++) {
-  const [tx, tz] = pineCoords[idx];
-  const pg = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.23, 2.3, 9), trunkMat);
-  trunk.position.y = 1.15;
-  trunk.castShadow = true;
-  pg.add(trunk);
+  for (let i = 0; i <= segA; i++) {
+    const th = (i / segA) * Math.PI * 2;
+    // Layered mountain ridge harmonic height profile around 360°
+    const hHarm =
+      0.52 +
+      0.28 * Math.sin(th * 3.0 + seed) +
+      0.18 * Math.cos(th * 7.0 - seed * 1.7) +
+      0.12 * Math.sin(th * 13.0 + seed * 2.3) +
+      0.06 * Math.cos(th * 23.0 - seed * 0.9);
+    // Ridged crisp mountain silhouette (slightly sharper peaks, wide valley saddles)
+    const ridgePeak = maxH * Math.pow(Math.max(0.18, hHarm), 1.25);
+    const localWiggle = 1.0 + 0.08 * Math.sin(th * 11.0 + seed);
 
-  const crownWrap = new THREE.Group();
-  for (let tier = 0; tier < 4; tier++) {
-    const r = 1.65 - tier * 0.30;
-    const h = 1.85 - tier * 0.18;
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(r, h, 10), tier % 2 === 0 ? pineLeafMat1 : pineLeafMat2);
-    cone.position.y = 2.05 + tier * 0.92;
-    cone.rotation.y = tier * 0.6;
-    cone.castShadow = true;
-    crownWrap.add(cone);
+    for (let j = 0; j <= segR; j++) {
+      const f = j / segR;
+      const rad = THREE.MathUtils.lerp(rIn, rOut, f) * localWiggle;
+      // Cross-ridge bell curve (zero at base inner/outer skirt, peaking smoothly along spine f ~ 0.45)
+      const spine = Math.sin(Math.pow(f, 0.85) * Math.PI);
+      const subRib = 1.0 + 0.14 * Math.sin(th * 17.0 + f * 4.5 + seed);
+      const elev = Math.max(-1.0, ridgePeak * spine * subRib - 1.2 * (1.0 - spine));
+      verts.push(Math.cos(th) * rad, elev, Math.sin(th) * rad);
+      uvs.push((i / segA) * 18.0, f * 3.0);
+
+      const hNorm = THREE.MathUtils.clamp(elev / maxH, 0.0, 1.0);
+      if (hNorm < 0.48) {
+        cTmp.copy(cLow).lerp(cMid, hNorm / 0.48);
+      } else {
+        cTmp.copy(cMid).lerp(cTop, (hNorm - 0.48) / 0.52);
+      }
+      cols.push(cTmp.r, cTmp.g, cTmp.b);
+    }
   }
-  pg.add(crownWrap);
-  pg.position.set(tx, 0, tz);
-  pg.scale.setScalar(0.85 + (idx % 4) * 0.14);
-  pineGroup.add(pg);
-  pineCrowns.push(crownWrap);
+  for (let i = 0; i < segA; i++) {
+    for (let j = 0; j < segR; j++) {
+      const a = i * (segR + 1) + j;
+      const b = a + 1;
+      const c = a + segR + 2;
+      const d2 = a + segR + 1;
+      idx.push(a, d2, c, a, c, b);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({
+    map: texGrass,
+    vertexColors: true,
+    roughness: 0.96,
+    metalness: 0.0,
+  });
+  return new THREE.Mesh(geo, mat);
 }
-scene.add(pineGroup);
+
+scene.add(createMountainBelt(52, 68, 92, 19.5, 0.7, 0x1a3f26, 0x2f5e36, 0x4b7740));
+scene.add(createMountainBelt(86, 114, 148, 34.0, 2.3, 0x1b4332, 0x2d5a52, 0x4e7a78));
+scene.add(createMountainBelt(138, 174, 218, 56.0, 4.1, 0x294861, 0x456982, 0x7aa0bd));
+
+// Translucent Da Lat morning valley mist floating in the pine saddle
+const valleyMistTex = (() => {
+  const c = document.createElement("canvas");
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext("2d");
+  const g = ctx.createLinearGradient(0, 0, 0, 64);
+  g.addColorStop(0.0, "rgba(232,244,252,0)");
+  g.addColorStop(0.45, "rgba(232,244,252,0.52)");
+  g.addColorStop(0.85, "rgba(220,238,250,0.22)");
+  g.addColorStop(1.0, "rgba(220,238,250,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+})();
+const valleyMistMat = new THREE.MeshBasicMaterial({
+  map: valleyMistTex,
+  transparent: true,
+  opacity: 0.30,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+});
+const mistRing = new THREE.Mesh(new THREE.CylinderGeometry(86, 72, 13.0, 64, 1, true), valleyMistMat);
+mistRing.position.y = 7.2;
+scene.add(mistRing);
+
+// 4D. Shared GPU Wind-Sway Hook for Mobile Foliage InstancedMeshes (0.01ms CPU cost!)
+const foliageWindUniforms = {
+  uTime: { value: 0.0 },
+  uAmp: { value: 0.025 },
+};
+function attachFoliageWind(mat, ampScale = 1.0) {
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = foliageWindUniforms.uTime;
+    shader.uniforms.uAmp = foliageWindUniforms.uAmp;
+    shader.vertexShader =
+      `uniform float uTime;\nuniform float uAmp;\n` +
+      shader.vertexShader.replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+        float wMask = clamp(uv.y, 0.0, 1.0);
+        float ph = uTime * 2.15 + position.x * 1.7 + position.z * 1.9;
+        #ifdef USE_INSTANCING
+          ph += instanceMatrix[3][0] * 0.45 + instanceMatrix[3][2] * 0.37;
+        #endif
+        transformed.x += sin(ph) * uAmp * ${ampScale.toFixed(2)} * wMask;
+        transformed.z += cos(ph * 0.83) * uAmp * ${(ampScale * 0.55).toFixed(2)} * wMask;`
+      );
+  };
+}
+
+// 4E. Da Lat 3-Needle Pine Forest (78 trees built with Pinus kesiya photo boughs via ONLY 2 InstancedMesh calls!)
+{
+  // Archetype 1: Tapered textured pine trunk
+  const trunkGeo = new THREE.CylinderGeometry(0.11, 0.23, 5.4, 8, 2);
+  trunkGeo.translate(0, 2.7, 0);
+  const trunkMat = new THREE.MeshStandardMaterial({
+    map: texPineBark,
+    bumpMap: texPineBark,
+    bumpScale: 0.025,
+    roughness: 0.94,
+  });
+
+  // Archetype 2: Irregular multi-tiered crossed botanical pine-bough crown (built manually into single merged BufferGeometry!)
+  const bPos = [], bNorm = [], bUv = [], bIdx = [];
+  const tierSpecs = [
+    // [centerY, width, height, tiltX, yaw]
+    [3.15, 2.5, 2.1, 0.24, 0.0],
+    [3.25, 2.5, 2.1, 0.24, 1.08],
+    [3.35, 2.4, 2.0, 0.22, 2.15],
+    [4.05, 2.25, 2.05, 0.20, 0.55],
+    [4.15, 2.25, 2.05, 0.20, 1.65],
+    [4.20, 2.1, 1.95, 0.18, 2.72],
+    [4.95, 1.75, 1.85, 0.12, 0.35],
+    [5.02, 1.70, 1.80, 0.12, 1.92],
+  ];
+  for (const [cy, bw, bh, tilt, yaw] of tierSpecs) {
+    const baseIdx = bPos.length / 3;
+    const corners = [
+      [-bw * 0.5, 0.0, 0.0],
+      [bw * 0.5, 0.0, 0.0],
+      [bw * 0.5, bh, 0.0],
+      [-bw * 0.5, bh, 0.0],
+    ];
+    const uvC = [[0, 0], [1, 0], [1, 1], [0, 1]];
+    const cY = Math.cos(yaw), sY = Math.sin(yaw);
+    const cT = Math.cos(tilt), sT = Math.sin(tilt);
+    for (let k = 0; k < 4; k++) {
+      let [lx, ly, lz] = corners[k];
+      const ry = ly * cT - lz * sT;
+      const rz = ly * sT + lz * cT;
+      const wx = lx * cY + rz * sY;
+      const wz = -lx * sY + rz * cY;
+      bPos.push(wx, cy + ry - bh * 0.38, wz);
+      bNorm.push(sY, 0.45, cY);
+      bUv.push(uvC[k][0], uvC[k][1]);
+    }
+    bIdx.push(baseIdx, baseIdx + 1, baseIdx + 2, baseIdx, baseIdx + 2, baseIdx + 3);
+  }
+  const crownGeo = new THREE.BufferGeometry();
+  crownGeo.setAttribute("position", new THREE.Float32BufferAttribute(bPos, 3));
+  crownGeo.setAttribute("normal", new THREE.Float32BufferAttribute(bNorm, 3));
+  crownGeo.setAttribute("uv", new THREE.Float32BufferAttribute(bUv, 2));
+  crownGeo.setIndex(bIdx);
+  crownGeo.computeVertexNormals();
+
+  const crownMat = new THREE.MeshStandardMaterial({
+    map: texPineBranch,
+    alphaTest: 0.36,
+    side: THREE.DoubleSide,
+    roughness: 0.86,
+    metalness: 0.02,
+  });
+  attachFoliageWind(crownMat, 1.6);
+
+  // Deterministic pseudo-random grove distribution avoiding greenhouse & entrance corridor
+  const treeTransforms = [];
+  let sRand = 1337;
+  const nextRand = () => {
+    sRand = (sRand * 1664525 + 1013904223) >>> 0;
+    return sRand / 4294967296;
+  };
+  // Anchor hero pine framing trees cleanly near the courtyard first
+  const heroCoords = [
+    [-9.2, -8.2, 1.05], [-13.2, -1.8, 1.28], [-10.8, 7.6, 1.15],
+    [9.4, -7.2, 1.08], [12.8, 2.2, 1.25], [11.2, 9.6, 1.18],
+    [-6.8, 14.2, 1.12], [6.8, 14.5, 1.22],
+  ];
+  for (const [hx, hz, hs] of heroCoords) {
+    treeTransforms.push([hx, hz, hs, nextRand() * Math.PI * 2, (nextRand() - 0.5) * 0.06]);
+  }
+  while (treeTransforms.length < 78) {
+    const ang = nextRand() * Math.PI * 2;
+    const rad = 14.0 + Math.pow(nextRand(), 0.72) * 72.0;
+    const tx = Math.cos(ang) * rad;
+    const tz = Math.sin(ang) * rad;
+    if (Math.abs(tx) < 7.8 && tz < 2.0 && tz > -24.0) continue; // Keep front approach sightline clear!
+    if (Math.hypot(tx, tz) < 12.2) continue;
+    const sc = 0.82 + nextRand() * 0.72;
+    treeTransforms.push([tx, tz, sc, nextRand() * Math.PI * 2, (nextRand() - 0.5) * 0.08]);
+  }
+
+  const pineTrunks = new THREE.InstancedMesh(trunkGeo, trunkMat, treeTransforms.length);
+  const pineCrownsInst = new THREE.InstancedMesh(crownGeo, crownMat, treeTransforms.length);
+  pineTrunks.castShadow = true;
+  pineTrunks.receiveShadow = true;
+  pineCrownsInst.castShadow = true;
+
+  const dummy = new THREE.Object3D();
+  const pineTint = new THREE.Color();
+  for (let i = 0; i < treeTransforms.length; i++) {
+    const [tx, tz, sc, rotY, lean] = treeTransforms[i];
+    const ty = terrainHeight(tx, tz) - 0.16;
+    dummy.position.set(tx, ty, tz);
+    dummy.rotation.set(lean, rotY, lean * 0.7);
+    dummy.scale.set(sc * (0.94 + nextRand() * 0.14), sc, sc * (0.94 + nextRand() * 0.14));
+    dummy.updateMatrix();
+    pineTrunks.setMatrixAt(i, dummy.matrix);
+    pineCrownsInst.setMatrixAt(i, dummy.matrix);
+    pineTint.setHSL(0.32 + (nextRand() - 0.5) * 0.03, 0.24 + nextRand() * 0.12, 0.78 + nextRand() * 0.22);
+    pineCrownsInst.setColorAt(i, pineTint);
+  }
+  pineTrunks.instanceMatrix.needsUpdate = true;
+  pineCrownsInst.instanceMatrix.needsUpdate = true;
+  if (pineCrownsInst.instanceColor) pineCrownsInst.instanceColor.needsUpdate = true;
+  scene.add(pineTrunks, pineCrownsInst);
+
+  // 4F. 720 Photorealistic Crossed-Blade Grass Tufts around courtyard edge, path & hills (1 draw call, castShadow = false!)
+  const gPos = [], gNorm = [], gUv = [], gIdx = [];
+  for (let pI = 0; pI < 3; pI++) {
+    const yaw = (pI * Math.PI) / 3.0;
+    const cY = Math.cos(yaw), sY = Math.sin(yaw);
+    const bi = gPos.length / 3;
+    const wHalf = 0.28;
+    const pts = [
+      [-wHalf, 0.0, 0.0], [wHalf, 0.0, 0.0],
+      [wHalf * 1.12, 0.56, 0.04], [-wHalf * 1.12, 0.56, 0.04],
+    ];
+    const uvG = [[0, 0], [1, 0], [1, 1], [0, 1]];
+    for (let k = 0; k < 4; k++) {
+      const [lx, ly, lz] = pts[k];
+      gPos.push(lx * cY + lz * sY, ly, -lx * sY + lz * cY);
+      gNorm.push(0, 1, 0);
+      gUv.push(uvG[k][0], uvG[k][1]);
+    }
+    gIdx.push(bi, bi + 1, bi + 2, bi, bi + 2, bi + 3);
+  }
+  const tuftGeo = new THREE.BufferGeometry();
+  tuftGeo.setAttribute("position", new THREE.Float32BufferAttribute(gPos, 3));
+  tuftGeo.setAttribute("normal", new THREE.Float32BufferAttribute(gNorm, 3));
+  tuftGeo.setAttribute("uv", new THREE.Float32BufferAttribute(gUv, 2));
+  tuftGeo.setIndex(gIdx);
+
+  const tuftMat = new THREE.MeshStandardMaterial({
+    map: texGrassTuft,
+    alphaTest: 0.34,
+    side: THREE.DoubleSide,
+    roughness: 0.88,
+    metalness: 0.0,
+  });
+  attachFoliageWind(tuftMat, 0.85);
+
+  const tuftCount = 720;
+  const grassInst = new THREE.InstancedMesh(tuftGeo, tuftMat, tuftCount);
+  grassInst.castShadow = false;
+  grassInst.receiveShadow = true;
+
+  let placed = 0;
+  while (placed < tuftCount) {
+    let gx, gz, sc = 0.55 + nextRand() * 0.68;
+    if (placed < 320) {
+      // Dense organic rim along basalt courtyard & entrance concrete path edge
+      const th = nextRand() * Math.PI * 2;
+      const edgeF = 0.86 + nextRand() * 0.35;
+      gx = Math.cos(th) * 5.65 * edgeF;
+      gz = Math.sin(th) * 8.95 * edgeF;
+    } else if (placed < 430) {
+      // Clumps flanking entrance concrete walkway edges
+      const sideS = nextRand() > 0.5 ? 1 : -1;
+      gx = sideS * (0.78 + nextRand() * 0.95);
+      gz = -6.7 - nextRand() * 11.8;
+      sc = 0.45 + nextRand() * 0.45;
+    } else {
+      // Meadow clusters across surrounding Dalat slopes
+      const ang = nextRand() * Math.PI * 2;
+      const rad = 8.0 + nextRand() * 34.0;
+      gx = Math.cos(ang) * rad;
+      gz = Math.sin(ang) * rad;
+      sc = 0.72 + nextRand() * 0.92;
+    }
+    // Keep strictly outside concrete pad & walkway interior
+    if (Math.abs(gx) < 3.65 && Math.abs(gz) < 6.75) continue;
+    if (Math.abs(gx) < 0.82 && gz < -6.3 && gz > -18.7) continue;
+    if (Math.hypot(gx - 3.85, gz + 6.45) < 0.55) continue; // Keep wind pier clean!
+
+    const gy = terrainHeight(gx, gz) - 0.03;
+    dummy.position.set(gx, gy, gz);
+    dummy.rotation.set((nextRand() - 0.5) * 0.14, nextRand() * Math.PI * 2, (nextRand() - 0.5) * 0.14);
+    dummy.scale.set(sc, sc * (0.8 + nextRand() * 0.55), sc);
+    dummy.updateMatrix();
+    grassInst.setMatrixAt(placed, dummy.matrix);
+    pineTint.setHSL(0.24 + (nextRand() - 0.5) * 0.06, 0.34 + nextRand() * 0.16, 0.72 + nextRand() * 0.28);
+    grassInst.setColorAt(placed, pineTint);
+    placed++;
+  }
+  grassInst.instanceMatrix.needsUpdate = true;
+  if (grassInst.instanceColor) grassInst.instanceColor.needsUpdate = true;
+  scene.add(grassInst);
+
+  // 4G. 56 Weathered Highland Basalt Garden Stones bordering earth apron & hillside slopes (1 draw call!)
+  const rockBaseGeo = new THREE.IcosahedronGeometry(0.26, 1);
+  const rPos = rockBaseGeo.attributes.position;
+  for (let i = 0; i < rPos.count; i++) {
+    const vx = rPos.getX(i), vy = rPos.getY(i), vz = rPos.getZ(i);
+    const warp = 0.78 + 0.26 * Math.sin(vx * 7.2 + vy * 5.1) * Math.cos(vz * 6.4);
+    rPos.setXYZ(i, vx * warp * 1.18, vy * warp * 0.72, vz * warp);
+  }
+  rockBaseGeo.computeVertexNormals();
+  const rockMat = new THREE.MeshStandardMaterial({
+    map: texBasalt,
+    color: 0x64748b,
+    roughness: 0.92,
+    metalness: 0.05,
+  });
+  const rocksInst = new THREE.InstancedMesh(rockBaseGeo, rockMat, 56);
+  rocksInst.castShadow = true;
+  rocksInst.receiveShadow = true;
+  let rPlaced = 0;
+  while (rPlaced < 56) {
+    const th = nextRand() * Math.PI * 2;
+    const rr = rPlaced < 34 ? 0.88 + nextRand() * 0.22 : 1.15 + nextRand() * 2.2;
+    const rx = Math.cos(th) * 5.4 * rr;
+    const rz = Math.sin(th) * 8.6 * rr;
+    if (Math.abs(rx) < 3.85 && Math.abs(rz) < 6.9) continue;
+    if (Math.abs(rx) < 1.1 && rz < -6.2 && rz > -19.0) continue;
+    const ry = terrainHeight(rx, rz) - 0.04;
+    const rSc = 0.65 + nextRand() * 1.35;
+    dummy.position.set(rx, ry, rz);
+    dummy.rotation.set(nextRand() * 0.5, nextRand() * Math.PI * 2, nextRand() * 0.5);
+    dummy.scale.set(rSc, rSc * (0.65 + nextRand() * 0.45), rSc);
+    dummy.updateMatrix();
+    rocksInst.setMatrixAt(rPlaced, dummy.matrix);
+    pineTint.setHSL(0.06, 0.14, 0.42 + nextRand() * 0.24);
+    rocksInst.setColorAt(rPlaced, pineTint);
+    rPlaced++;
+  }
+  rocksInst.instanceMatrix.needsUpdate = true;
+  if (rocksInst.instanceColor) rocksInst.instanceColor.needsUpdate = true;
+  scene.add(rocksInst);
+}
 
 // =============================================================================
 // 5. GREEN INFO 3D DOME STRUCTURE, FULL 32-MESH ENCLOSURE & RAINWATER TANK
@@ -1405,7 +1824,8 @@ function setWeather(mode) {
     sunLight.color.setHex(0xfffbeb);
     hemiLight.intensity = 0.95;
     scene.fog.color.setHex(0xe0f2fe);
-    scene.fog.density = 0.013; // Soft Da Lat morning mist
+    scene.fog.density = 0.0085; // Soft Da Lat morning valley mist
+    valleyMistMat.opacity = 0.38;
     updateTelemetry(19.5, 100, 9, 0.8, "Thu gọn (Đón nắng sớm)", "tele-ok");
   } else if (mode === "heatwave") {
     targetDeploy = 1.0;
@@ -1414,7 +1834,8 @@ function setWeather(mode) {
     sunLight.color.setHex(0xffedd5);
     hemiLight.intensity = 0.90;
     scene.fog.color.setHex(0xfef3c7);
-    scene.fog.density = 0.006;
+    scene.fog.density = 0.0042;
+    valleyMistMat.opacity = 0.14;
     updateTelemetry(31.2, 62, 7, 3.0, "Phủ nóc (Giảm bức xạ 37°C)", "tele-warn");
   } else if (mode === "rainstorm") {
     targetDeploy = 0.0; // Mái nhựa PE đã che mưa kín -> Không cần đưa tấm pin lên!
@@ -1423,7 +1844,8 @@ function setWeather(mode) {
     sunLight.color.setHex(0xe2e8f0);
     hemiLight.intensity = 0.72;
     scene.fog.color.setHex(0xcbd5e1);
-    scene.fog.density = 0.016;
+    scene.fog.density = 0.0115;
+    valleyMistMat.opacity = 0.44;
     updateTelemetry(18.2, 58, 24, 0.5, "Thu gọn (Mái PE che mưa)", "tele-ok");
   } else if (mode === "typhoon") {
     targetDeploy = 0.0;
@@ -1432,7 +1854,8 @@ function setWeather(mode) {
     sunLight.color.setHex(0xcbd5e1);
     hemiLight.intensity = 0.65;
     scene.fog.color.setHex(0x94a3b8);
-    scene.fog.density = 0.020;
+    scene.fog.density = 0.0145;
+    valleyMistMat.opacity = 0.50;
     updateTelemetry(17.0, 46, 56, 0.3, "FAIL-SAFE: Thu gọn bão!", "tele-danger");
   }
   document.getElementById("solar-slider").value = Math.round(targetDeploy * 100);
@@ -1735,10 +2158,9 @@ function animate(now) {
   const windSpeed = currentWeather === "typhoon" ? 18.0 : currentWeather === "rainstorm" ? 8.0 : 2.5;
   anemoRotor.rotation.y += windSpeed * dt;
   windVane.rotation.y = -0.35 + Math.sin(now * 0.002) * (currentWeather === "typhoon" ? 0.38 : 0.12);
-  const swayAmp = currentWeather === "typhoon" ? 0.08 : currentWeather === "rainstorm" ? 0.035 : 0.012;
-  pineCrowns.forEach((cr, idx) => {
-    cr.rotation.z = Math.sin(now * 0.0025 + idx) * swayAmp;
-  });
+  const targetAmp = currentWeather === "typhoon" ? 0.14 : currentWeather === "rainstorm" ? 0.065 : 0.022;
+  foliageWindUniforms.uTime.value = now * 0.001;
+  foliageWindUniforms.uAmp.value += (targetAmp - foliageWindUniforms.uAmp.value) * Math.min(1, dt * 3.0);
 
   if (rainLines.visible) {
     const pos = rainGeo.attributes.position.array;
