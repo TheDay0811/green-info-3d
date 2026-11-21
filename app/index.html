@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Green Info Mobile App – Giám sát Nông điện & AI Dưa lưới Đà Lạt</title>
+  <link rel="stylesheet" href="styles.css?v=20261121a" />
+</head>
+<body>
+  <!-- Desktop Showcase Control Strip (hidden automatically on mobile phones) -->
+  <header class="showcase-bar" id="showcase-bar">
+    <div class="sb-brand">
+      <span class="sb-logo-dot" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22v-9" />
+          <path d="M12 13C7 13 4 9.5 4 4.5c5 0 8 3 8 8.5Z" />
+          <path d="M12 13c5 0 8-3.5 8-8.5-5 0-8 3-8 8.5Z" />
+        </svg>
+      </span>
+      <div>
+        <div class="sb-title">GREEN INFO • OPEN AGRI-HUB APP</div>
+        <div class="sb-sub">Mô phỏng ứng dụng điện thoại giám sát nhà vòm Pilot Đà Lạt (6 m × 12 m • 84 gốc dưa lưới)</div>
+      </div>
+    </div>
+
+    <div class="sb-controls">
+      <div class="sb-group">
+        <span class="sb-label">Khí hậu test:</span>
+        <button class="sb-pill" data-sim-weather="morning">Sáng sương 19.5°C</button>
+        <button class="sb-pill active" data-sim-weather="heatwave">Nắng gắt 37°C</button>
+        <button class="sb-pill" data-sim-weather="rainstorm">Mưa dông 18°C</button>
+        <button class="sb-pill danger" data-sim-weather="typhoon">Gió lốc 56 km/h</button>
+      </div>
+      <div class="sb-group">
+        <span class="sb-label">Giai đoạn vụ:</span>
+        <button class="sb-pill" data-sim-stage="vegetative">Ngày 24 (Đậu trái)</button>
+        <button class="sb-pill" data-sim-stage="netting">Ngày 48 (Tạo lưới)</button>
+        <button class="sb-pill active" data-sim-stage="harvest">Ngày 64 (Canh chín)</button>
+      </div>
+      <div class="sb-group">
+        <button class="sb-btn-ghost" id="btn-toggle-frame" title="Chuyển giữa Khung điện thoại & Toàn màn hình">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10 18h4"/></svg>
+          <span>Toàn màn hình</span>
+        </button>
+        <a class="sb-btn-primary" href="../" title="Quay lại Mô hình Nhà vòm 3D">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+          <span>Mở Mô hình 3D</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Centered Smartphone Device Frame (Native full-screen on mobile) -->
+  <main class="stage-wrap">
+    <div class="phone-shell" id="phone-shell">
+      <div class="phone-speaker" aria-hidden="true"></div>
+      <div class="phone-screen" id="phone-screen">
+
+        <!-- Native App Status Bar -->
+        <div class="ios-statusbar">
+          <span class="ios-time" id="app-clock">22:33</span>
+          <div class="ios-island" aria-hidden="true">
+            <span class="island-dot" id="island-dot"></span>
+            <span class="island-txt" id="island-status">AI Hub Online</span>
+          </div>
+          <div class="ios-icons">
+            <span class="sig-bars" title="LoRa/4G Signal">
+              <i></i><i></i><i></i><i></i>
+            </span>
+            <span class="bat-pill" id="top-battery" title="Ắc quy LiFePO4 94%">
+              <span class="bat-lvl">94%</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- App Sticky Top Bar -->
+        <header class="app-header">
+          <div class="ah-left">
+            <div class="ah-mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22v-9"/><path d="M12 13C7 13 4 9.5 4 4.5c5 0 8 3 8 8.5Z"/><path d="M12 13c5 0 8-3.5 8-8.5-5 0-8 3-8 8.5Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="ah-title-row">
+                <span class="ah-name">Green Info</span>
+                <span class="ah-badge-sim">APP MÔ PHỎNG</span>
+              </div>
+              <div class="ah-sub" id="ah-subtitle">Nhà vòm Pilot Đà Lạt • 72 m² • 84 gốc</div>
+            </div>
+          </div>
+          <div class="ah-actions">
+            <a class="ah-icon-btn" href="../" title="Xem mô hình 3D" aria-label="Xem mô hình 3D">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </a>
+            <button class="ah-icon-btn" id="btn-sync-sensors" title="Làm mới dữ liệu cảm biến" aria-label="Đồng bộ cảm biến">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Inline Quick Sim Strip inside Mobile App (always reachable on mobile phones too) -->
+        <div class="mobile-sim-strip">
+          <div class="mss-scroll">
+            <button class="mss-chip" data-sim-weather="morning">Sáng 19.5°</button>
+            <button class="mss-chip active" data-sim-weather="heatwave">Nắng 37°</button>
+            <button class="mss-chip" data-sim-weather="rainstorm">Mưa dông</button>
+            <button class="mss-chip danger" data-sim-weather="typhoon">Bão 56km/h</button>
+            <span class="mss-sep"></span>
+            <button class="mss-chip" data-sim-stage="vegetative">N24</button>
+            <button class="mss-chip" data-sim-stage="netting">N48</button>
+            <button class="mss-chip active" data-sim-stage="harvest">N64 Chín</button>
+          </div>
+        </div>
+
+        <!-- Scrollable App Viewport -->
+        <div class="app-scroll" id="app-scroll">
+
+          <!-- ==================== TAB 1: TỔNG QUAN ==================== -->
+          <section class="tab-view active" id="tab-overview" data-tab="overview">
+            <!-- Live Status Hero Card -->
+            <div class="hero-card" id="ov-hero-card">
+              <div class="hc-top">
+                <div>
+                  <span class="hc-pill" id="ov-dome-badge">Mái pin phủ nóc 100%</span>
+                  <h2 class="hc-title" id="ov-climate-title">Trưa nắng bức xạ cao</h2>
+                  <p class="hc-desc" id="ov-climate-desc">Tấm pin trượt phủ đỉnh giúp hạ 6.0°C trong vòm (còn 31.2°C), phát 3.0 kW sạc LiFePO4.</p>
+                </div>
+                <div class="hc-ring-wrap">
+                  <div class="hc-countdown-box">
+                    <span class="hcb-num" id="ov-days-left">4</span>
+                    <span class="hcb-unit">ngày</span>
+                    <span class="hcb-lbl">cắt lứa đầu</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hc-footer">
+                <div class="hcf-stat">
+                  <span class="hcf-lbl">Quả đã chín</span>
+                  <span class="hcf-val green" id="ov-ripe-summary">22 / 84 gốc</span>
+                </div>
+                <div class="hcf-div"></div>
+                <div class="hcf-stat">
+                  <span class="hcf-lbl">Độ ngọt TB</span>
+                  <span class="hcf-val amber" id="ov-brix-avg">13.8° Brix</span>
+                </div>
+                <div class="hcf-div"></div>
+                <div class="hcf-stat">
+                  <span class="hcf-lbl">Cửa hàng / Bồn</span>
+                  <span class="hcf-val blue" id="ov-tank-pct">78% (390 L)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 Core Telemetry Metrics (Nhiệt độ, Ánh sáng, Nước, Dinh dưỡng) -->
+            <div class="section-head">
+              <h3>Thông số cảm biến thời gian thực</h3>
+              <span class="sh-tag" id="sensor-sync-time">Cập nhật vừa xong</span>
+            </div>
+
+            <div class="metrics-grid">
+              <!-- Temp -->
+              <article class="metric-card">
+                <div class="mc-head">
+                  <span class="mc-icon temp">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+                  </span>
+                  <span class="mc-status ok" id="mc-temp-badge">Ổn định</span>
+                </div>
+                <div class="mc-val" id="mc-temp-val">31.2°C</div>
+                <div class="mc-lbl">Nhiệt độ vòm <span id="mc-temp-out">(Ngoài 37.2°C)</span></div>
+                <div class="mc-bar"><i id="mc-temp-bar" style="width: 68%"></i></div>
+                <div class="mc-sub">Ngưỡng dưa: 25–33°C</div>
+              </article>
+
+              <!-- Light PAR -->
+              <article class="metric-card">
+                <div class="mc-head">
+                  <span class="mc-icon sun">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                  </span>
+                  <span class="mc-status ok" id="mc-par-badge">Tối ưu</span>
+                </div>
+                <div class="mc-val" id="mc-par-val">62% PAR</div>
+                <div class="mc-lbl">Cường độ sáng <span id="mc-par-umol">(680 µmol)</span></div>
+                <div class="mc-bar sun"><i id="mc-par-bar" style="width: 62%"></i></div>
+                <div class="mc-sub" id="mc-par-sub">Mái pin cắt bức xạ gắt</div>
+              </article>
+
+              <!-- Water & Soil Moisture -->
+              <article class="metric-card">
+                <div class="mc-head">
+                  <span class="mc-icon water">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                  </span>
+                  <span class="mc-status ok" id="mc-water-badge">Đủ ẩm</span>
+                </div>
+                <div class="mc-val" id="mc-water-val">68% ẩm</div>
+                <div class="mc-lbl">Nước cây: <span id="mc-water-l">1.45 L/gốc</span></div>
+                <div class="mc-bar water"><i id="mc-water-bar" style="width: 68%"></i></div>
+                <div class="mc-sub" id="mc-water-sub">Bồn nước mưa PE: 78%</div>
+              </article>
+
+              <!-- Nutrition EC/NPK -->
+              <article class="metric-card">
+                <div class="mc-head">
+                  <span class="mc-icon npk">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg>
+                  </span>
+                  <span class="mc-status ok" id="mc-npk-badge">Cân bằng</span>
+                </div>
+                <div class="mc-val" id="mc-ec-val">EC 2.1</div>
+                <div class="mc-lbl">pH <span id="mc-ph-val">6.2</span> • K: <span id="mc-k-val">215</span> ppm</div>
+                <div class="mc-bar npk"><i id="mc-npk-bar" style="width: 76%"></i></div>
+                <div class="mc-sub">Chuẩn 7 chỉ số kiểu Enfarm</div>
+              </article>
+            </div>
+
+            <!-- AI Urgent Diagnosis Card -->
+            <div class="section-head">
+              <h3>AI Phân tích: Cây đang cần gì?</h3>
+              <button class="sh-link" data-go-tab="ai">Chi tiết AI ›</button>
+            </div>
+
+            <div class="ai-summary-card" id="ov-ai-card">
+              <div class="ais-header">
+                <span class="ais-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                  Khuyến nghị ưu tiên
+                </span>
+                <span class="ais-conf" id="ov-ai-conf">Độ tin cậy 94%</span>
+              </div>
+              <p class="ais-headline" id="ov-ai-headline">Giảm 25% lượng tưới để siết đường đạt ≥ 14° Brix, giữ pin phủ nóc cắt nhiệt.</p>
+              <ul class="ais-needs" id="ov-ai-needs"></ul>
+              <div class="ais-actions">
+                <button class="btn-ai-apply" id="btn-ov-apply-ai">Áp dụng lệnh tối ưu ngay</button>
+                <button class="btn-ai-ask" data-go-tab="ai">Hỏi AI thêm</button>
+              </div>
+            </div>
+
+            <!-- Ripeness & Weather Mini Glance -->
+            <div class="glance-pair">
+              <button class="glance-card" data-go-tab="crops">
+                <div class="gc-top">
+                  <span class="gc-t">Tỷ lệ Xanh / Chín</span>
+                  <span class="gc-arrow">›</span>
+                </div>
+                <div class="gc-stackbar" id="ov-ripeness-bar">
+                  <span class="sb-ripe" style="width:26%"></span>
+                  <span class="sb-turn" style="width:40%"></span>
+                  <span class="sb-green" style="width:34%"></span>
+                </div>
+                <div class="gc-legend" id="ov-ripeness-legend">22 Chín • 34 Sắp chín • 28 Xanh</div>
+              </button>
+
+              <button class="glance-card" data-go-tab="dome">
+                <div class="gc-top">
+                  <span class="gc-t">Mái vòm &amp; Gió</span>
+                  <span class="gc-arrow">›</span>
+                </div>
+                <div class="gc-wind" id="ov-dome-glance">Gió 7 km/h • Nắng 37°</div>
+                <div class="gc-forecast" id="ov-forecast-glance">Dự báo 3h tới: Giảm nắng dần</div>
+              </button>
+            </div>
+          </section>
+
+          <!-- ==================== TAB 2: VƯỜN & CANH CHÍN ==================== -->
+          <section class="tab-view" id="tab-crops" data-tab="crops">
+            <!-- Harvest Countdown Banner -->
+            <div class="harvest-banner">
+              <div class="hb-left">
+                <div class="hb-stage" id="crop-stage-label">Vụ Pilot 65–75 ngày • Ngày thứ 64</div>
+                <h3 class="hb-title" id="crop-harvest-title">Thu hoạch rộ sau ~4 ngày nữa</h3>
+                <p class="hb-sub" id="crop-harvest-sub">Dự kiến hái chọn lọc 22 quả chín sớm hôm nay; 34 quả đang chuyển vàng đạt chuẩn sau 4–6 ngày.</p>
+              </div>
+              <div class="hb-progress-ring">
+                <svg viewBox="0 0 64 64">
+                  <circle class="pr-bg" cx="32" cy="32" r="26" />
+                  <circle class="pr-fill" id="crop-cycle-ring" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="16" />
+                </svg>
+                <span class="pr-txt" id="crop-cycle-pct">91%</span>
+              </div>
+            </div>
+
+            <!-- Counts + Filter Tabs -->
+            <div class="ripeness-counts">
+              <button class="rc-pill active" data-crop-filter="all">Tất cả <b id="cnt-all">84</b></button>
+              <button class="rc-pill ripe" data-crop-filter="ripe">Đã chín <b id="cnt-ripe">22</b></button>
+              <button class="rc-pill turning" data-crop-filter="turning">Sắp chín <b id="cnt-turning">34</b></button>
+              <button class="rc-pill green" data-crop-filter="green">Còn xanh <b id="cnt-green">28</b></button>
+            </div>
+
+            <!-- Interactive 4-Row Orchard Grid (84 plants) -->
+            <div class="orchard-card">
+              <div class="oc-head">
+                <div>
+                  <h4>Sơ đồ 4 luống (84 gốc xơ dừa)</h4>
+                  <span>Chạm từng gốc để soi Xanh/Chín &amp; nước dinh dưỡng</span>
+                </div>
+                <span class="oc-legend-dots">
+                  <i class="d-green"></i>Xanh
+                  <i class="d-turn"></i>Sắp chín
+                  <i class="d-ripe"></i>Đã chín
+                </span>
+              </div>
+              <div class="orchard-grid" id="orchard-grid"></div>
+              <div class="oc-sensors-note">
+                <span class="sensor-badge-enfarm">Z1 / Z2</span> Cảm biến 7 chỉ số kiểu Enfarm tại gốc <b>A4</b> &amp; <b>C14</b>
+              </div>
+            </div>
+
+            <!-- Selected Plant AI Vision & Ripeness Inspector -->
+            <div class="plant-inspector" id="plant-inspector">
+              <div class="pi-top">
+                <div class="pi-fruit-svg" id="pi-fruit-visual" aria-hidden="true"></div>
+                <div class="pi-info">
+                  <div class="pi-badge-row">
+                    <span class="pi-id" id="pi-id">Gốc A04</span>
+                    <span class="pi-status-badge ripe" id="pi-status-badge">Đã chín • Sẵn sàng hái</span>
+                  </div>
+                  <h4 class="pi-name" id="pi-title">Dưa lưới Kim Hoàng Hậu – Lưới nổi 100%</h4>
+                  <p class="pi-desc" id="pi-desc">AI Edge Vision nhận diện vân lưới đan khít, vỏ chuyển kem vàng &amp; vòng nứt nhẹ quanh cuống quả.</p>
+                </div>
+              </div>
+
+              <div class="pi-metrics">
+                <div><span>Độ chín AI</span><b id="pi-ripeness">96%</b></div>
+                <div><span>Brix dự báo</span><b id="pi-brix">14.6°</b></div>
+                <div><span>Còn lại</span><b id="pi-days">Hái hôm nay</b></div>
+                <div><span>Nhu cầu nước</span><b id="pi-water-need">Siết 0.9 L</b></div>
+              </div>
+
+              <div class="pi-advice" id="pi-advice">
+                AI đề xuất: Có thể cắt thu hoạch trong sáng nay khi đường tích lũy đạt đỉnh trước giờ nắng gắt.
+              </div>
+            </div>
+
+            <!-- Green vs Ripe Reference Guide -->
+            <div class="compare-card">
+              <h4>Tiêu chuẩn canh Dưa Xanh vs Đã Chín (AI Vision)</h4>
+              <div class="cmp-cols">
+                <div class="cmp-col green">
+                  <div class="cc-head">Quả Đang Xanh (Ngày 25–52)</div>
+                  <ul>
+                    <li><b>Vỏ &amp; Lưới:</b> Xanh lục sẫm, vân lưới thưa hoặc mới rạn nhẹ.</li>
+                    <li><b>Độ ngọt:</b> ~8.5 – 11.5° Brix, thịt còn cứng/nhạt.</li>
+                    <li><b>Chế độ chăm:</b> Tưới đủ 1.4–1.6 L/ngày, giữ ẩm 68%, bổ sung Kali + Canxi giúp chắc vỏ.</li>
+                  </ul>
+                </div>
+                <div class="cmp-col ripe">
+                  <div class="cc-head">Quả Đã Chín (Ngày 62–75)</div>
+                  <ul>
+                    <li><b>Vỏ &amp; Lưới:</b> Chuyển vàng kem, vân lưới nổi gờ dày 100%, rạn chân cuống &amp; thơm nhẹ.</li>
+                    <li><b>Độ ngọt:</b> ≥ 13.8 – 15.0° Brix (Loại 1 thương phẩm).</li>
+                    <li><b>Chế độ chăm:</b> Siết nước giảm về 52–56% ẩm giá thể để cô đặc vị ngọt, hái buổi sáng.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ==================== TAB 3: MÁI VÒM & THỜI TIẾT ==================== -->
+          <section class="tab-view" id="tab-dome" data-tab="dome">
+            <!-- Live SVG Dome Simulation Canvas -->
+            <div class="dome-visual-card">
+              <div class="dvc-head">
+                <div>
+                  <span class="dvc-pill" id="dome-mode-pill">Trạng thái: Đang trượt phủ đỉnh</span>
+                  <h3>Khu vực Mái vòm &amp; Khí tượng</h3>
+                </div>
+                <span class="dvc-wind-badge" id="dome-wind-badge">Gió 7 km/h</span>
+              </div>
+
+              <!-- Animated SVG Dome Cross-Section + Weather -->
+              <div class="dome-svg-box" id="dome-svg-box">
+                <svg viewBox="0 0 360 190" class="dome-svg" id="dome-svg">
+                  <defs>
+                    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#bae6fd" id="svg-sky-top"/>
+                      <stop offset="100%" stop-color="#f0fdf4" id="svg-sky-bot"/>
+                    </linearGradient>
+                    <linearGradient id="pvGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#1e3a8a"/>
+                      <stop offset="100%" stop-color="#0f172a"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- Sky Background -->
+                  <rect x="0" y="0" width="360" height="190" rx="14" fill="url(#skyGrad)"/>
+                  <!-- Da Lat Hills -->
+                  <path d="M0 155 Q70 112 150 142 T360 135 L360 190 L0 190 Z" fill="#86efac" opacity="0.45"/>
+                  <path d="M0 162 Q120 130 230 155 T360 148 L360 190 L0 190 Z" fill="#22c55e" opacity="0.3"/>
+                  <!-- Ground & Concrete Pad -->
+                  <rect x="0" y="160" width="360" height="30" fill="#9a4e36" opacity="0.22"/>
+                  <rect x="65" y="156" width="230" height="8" rx="2" fill="#cbd5e1"/>
+
+                  <!-- Rain Layer (shown on rain/typhoon) -->
+                  <g id="svg-rain-layer" opacity="0"></g>
+                  <!-- Sun Glow (shown on morning/heatwave) -->
+                  <g id="svg-sun-glow">
+                    <circle cx="305" cy="36" r="18" fill="#fde047" opacity="0.88"/>
+                    <circle cx="305" cy="36" r="28" fill="#fef08a" opacity="0.35"/>
+                  </g>
+
+                  <!-- Greenhouse Outer Arch & PE Roof -->
+                  <path d="M 85 156 L 85 95 Q 180 28 275 95 L 275 156" fill="rgba(224,242,254,0.38)" stroke="#64748b" stroke-width="3.2"/>
+                  <!-- PE Water Gutter Edges at ±2.84m -->
+                  <path d="M 88 95 L 94 95 L 94 102 L 88 102 Z" fill="#0284c7"/>
+                  <path d="M 266 95 L 272 95 L 272 102 L 266 102 Z" fill="#0284c7"/>
+
+                  <!-- Interior Melon Plants -->
+                  <g fill="#16a34a" opacity="0.85">
+                    <line x1="125" y1="154" x2="125" y2="112" stroke="#15803d" stroke-width="2.5"/>
+                    <circle cx="122" cy="126" r="4.5" fill="#d97706"/>
+                    <line x1="155" y1="154" x2="155" y2="108" stroke="#15803d" stroke-width="2.5"/>
+                    <circle cx="158" cy="124" r="4.5" fill="#16a34a"/>
+                    <line x1="205" y1="154" x2="205" y2="108" stroke="#15803d" stroke-width="2.5"/>
+                    <circle cx="202" cy="125" r="4.5" fill="#ca8a04"/>
+                    <line x1="235" y1="154" x2="235" y2="112" stroke="#15803d" stroke-width="2.5"/>
+                    <circle cx="238" cy="126" r="4.5" fill="#16a34a"/>
+                  </g>
+
+                  <!-- Dynamic Sliding Solar Panels (transformed via JS based on slider) -->
+                  <path id="svg-solar-left" d="M 79 148 L 79 100" stroke="url(#pvGrad)" stroke-width="7" stroke-linecap="round" fill="none"/>
+                  <path id="svg-solar-right" d="M 281 148 L 281 100" stroke="url(#pvGrad)" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+                  <!-- Freestanding Wind Station Outside Right Corner -->
+                  <line x1="322" y1="160" x2="322" y2="76" stroke="#475569" stroke-width="3"/>
+                  <rect x="316" y="153" width="12" height="7" rx="1" fill="#64748b"/>
+                  <g id="svg-anemo-rotor" transform="translate(322, 76)">
+                    <line x1="-11" y1="0" x2="11" y2="0" stroke="#0f172a" stroke-width="2"/>
+                    <circle cx="-11" cy="0" r="3" fill="#dc2626"/>
+                    <circle cx="11" cy="0" r="3" fill="#0f172a"/>
+                    <line x1="0" y1="-9" x2="0" y2="9" stroke="#0f172a" stroke-width="1.6"/>
+                  </g>
+
+                  <!-- Rainwater Tank on Left Back -->
+                  <rect x="36" y="128" width="22" height="28" rx="4" fill="#0284c7"/>
+                  <rect x="40" y="124" width="14" height="4" rx="1" fill="#0f172a"/>
+                  <text x="47" y="145" font-size="7" font-weight="700" fill="#ffffff" text-anchor="middle" id="svg-tank-txt">78%</text>
+
+                  <!-- Live Telemetry Callouts on SVG -->
+                  <rect x="132" y="10" width="96" height="20" rx="10" fill="rgba(15,23,42,0.78)"/>
+                  <text x="180" y="23" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" id="svg-dome-label">Vòm: 31.2°C • PV 100%</text>
+                </svg>
+              </div>
+
+              <!-- Interactive Solar Deploy Slider -->
+              <div class="dome-slider-wrap">
+                <div class="dsw-top">
+                  <span>Điều khiển thử cơ cấu Pin trượt lồng</span>
+                  <b id="app-solar-pct">100%</b>
+                </div>
+                <input type="range" id="app-solar-slider" min="0" max="100" value="100" />
+                <div class="dsw-notes">
+                  <span>0% Thu gọn vách (Đón nắng sáng / Che bão)</span>
+                  <span>100% Phủ nóc (Cắt nhiệt +3.0 kW)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 Dome Zones Status -->
+            <div class="section-head">
+              <h3>Chi tiết 4 khu vực mái vòm</h3>
+              <span class="sh-tag">Fail-Safe Ready</span>
+            </div>
+
+            <div class="zones-grid">
+              <div class="zone-card">
+                <span class="zc-name">Trạm Gió Góc Phải</span>
+                <b class="zc-val" id="z-wind-val">7 km/h • ĐN</b>
+                <span class="zc-sub" id="z-wind-sub">Giật 11 km/h • An toàn</span>
+              </div>
+              <div class="zone-card">
+                <span class="zc-name">Bức xạ &amp; Nắng/Mưa</span>
+                <b class="zc-val" id="z-sun-val">Nắng gắt • 0 mm</b>
+                <span class="zc-sub" id="z-sun-sub">UV cao • Thu gom nước: Tắt</span>
+              </div>
+              <div class="zone-card">
+                <span class="zc-name">Ray Pin Trượt Lồng</span>
+                <b class="zc-val" id="z-pv-val">100% • 3.0 kW</b>
+                <span class="zc-sub" id="z-pv-sub">Ray 8/13.5 cm • Cân bằng tải</span>
+              </div>
+              <div class="zone-card">
+                <span class="zc-name">Mái PE &amp; Lưới 32 Mesh</span>
+                <b class="zc-val" id="z-mesh-val">Chênh -6.0°C</b>
+                <span class="zc-sub" id="z-mesh-sub">Kín nước mưa • Thông gió tốt</span>
+              </div>
+            </div>
+
+            <!-- AI Weather Forecast Engine -->
+            <div class="section-head">
+              <h3>AI Dự báo Thời tiết Khu vực Mái vòm</h3>
+              <span class="sh-tag ai">Edge AI + Open Weather</span>
+            </div>
+
+            <div class="forecast-alert" id="forecast-alert">
+              <div class="fa-head">
+                <span class="fa-badge">Dự báo +25 phút tới</span>
+                <span class="fa-prob" id="fa-prob">Xác suất 89%</span>
+              </div>
+              <p class="fa-msg" id="fa-msg">Bức xạ mặt trời bắt đầu giảm nhẹ sau 14:30. AI sẽ thu pin dần từ 100% về 40% rồi 0% lúc 16:00 để đón ánh sáng dịu chiều.</p>
+            </div>
+
+            <!-- Hourly Timeline Forecast -->
+            <div class="hourly-card">
+              <div class="hc-subhead">Biểu đồ dự báo theo giờ &amp; Tự động hóa mái pin</div>
+              <div class="hourly-strip" id="hourly-strip"></div>
+            </div>
+
+            <!-- 3-Day Da Lat Highland Forecast -->
+            <div class="days-card" id="days-forecast"></div>
+          </section>
+
+          <!-- ==================== TAB 4: TRỢ LÝ AI ==================== -->
+          <section class="tab-view" id="tab-ai" data-tab="ai">
+            <div class="ai-hero-banner">
+              <div class="ahb-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </div>
+              <div>
+                <h3>Trợ lý AI Green Info</h3>
+                <p>Phân tích đa biến từ 7 chỉ số đất + vi khí hậu mái vòm &amp; lịch sử độ chín.</p>
+              </div>
+            </div>
+
+            <!-- Action Simulator Control Panel -->
+            <div class="ai-actions-panel">
+              <div class="aap-title">Điều khiển nhanh theo khuyến nghị AI</div>
+              <div class="aap-btns">
+                <button class="aap-btn" id="act-drip">
+                  <span>Tưới nhỏ giọt (+8% ẩm)</span>
+                  <small>Van 24V • Bồn PE</small>
+                </button>
+                <button class="aap-btn" id="act-dry-cut">
+                  <span>Siết nước ngọt quả (54%)</span>
+                  <small>Giai đoạn chín</small>
+                </button>
+                <button class="aap-btn" id="act-boost-k">
+                  <span>Bổ sung Kali (+25 ppm)</span>
+                  <small>Tăng Brix &amp; lưới</small>
+                </button>
+                <button class="aap-btn" id="act-auto-roof">
+                  <span>AI Tự chỉnh mái pin</span>
+                  <small>Tối ưu PAR &amp; An toàn</small>
+                </button>
+              </div>
+            </div>
+
+            <!-- Full Technical AI Assessment -->
+            <div class="ai-report-card" id="ai-full-report">
+              <div class="air-head">
+                <h4>Báo cáo chẩn đoán tổng hợp hiện tại</h4>
+                <span id="ai-risk-badge" class="air-badge ok">Nguy cơ thấp</span>
+              </div>
+              <div class="air-blocks" id="ai-report-blocks"></div>
+            </div>
+
+            <!-- Interactive AI Agronomist Chat -->
+            <div class="ai-chat-card">
+              <div class="acc-head">Hỏi đáp trực tiếp với AI Vườn dưa</div>
+              <div class="acc-prompts">
+                <button class="prompt-chip" data-prompt="Cây hôm nay đang cần gì nhất?">Cây cần gì nhất?</button>
+                <button class="prompt-chip" data-prompt="Bao lâu nữa thu hoạch và có bao nhiêu quả đã chín?">Bao lâu thu hoạch &amp; Xanh/Chín?</button>
+                <button class="prompt-chip" data-prompt="Thời tiết mái vòm gió mưa nắng sắp tới thế nào?">Dự báo gió mưa mái vòm?</button>
+                <button class="prompt-chip" data-prompt="Lượng nước và phân NPK hiện tại có chuẩn chưa?">Kiểm tra nước &amp; NPK?</button>
+              </div>
+              <div class="chat-feed" id="chat-feed"></div>
+              <form class="chat-input-bar" id="chat-form">
+                <input type="text" id="chat-input" placeholder="Hỏi AI về nhiệt độ, nước, độ chín, thời tiết..." autocomplete="off" />
+                <button type="submit" aria-label="Gửi câu hỏi">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </form>
+            </div>
+
+            <div class="transparency-foot">
+              Mô phỏng giao diện App Open Agri-Hub kết nối cảm biến đất 7 chỉ số kiểu Enfarm, điều khiển tưới &amp; lộ trình firmware nhúng Rust Fail-Safe (Pilot Green Info Đà Lạt).
+            </div>
+          </section>
+
+        </div>
+
+        <!-- Bottom App Navigation Tabs -->
+        <nav class="app-tabbar" aria-label="Điều hướng ứng dụng">
+          <button class="tab-btn active" data-tab-target="overview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1.5"/><rect width="7" height="5" x="14" y="3" rx="1.5"/><rect width="7" height="9" x="14" y="12" rx="1.5"/><rect width="7" height="5" x="3" y="16" rx="1.5"/></svg>
+            <span>Tổng quan</span>
+          </button>
+          <button class="tab-btn" data-tab-target="crops">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"/><path d="M12 6c0-2 1.5-3.5 3.5-3.5"/><path d="M9 13c0-3.5 1.5-7 3-7s3 3.5 3 7-1.5 7-3 7-3-3.5-3-7Z"/></svg>
+            <span>Cây &amp; Chín</span>
+          </button>
+          <button class="tab-btn" data-tab-target="dome">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+            <span>Mái &amp; Gió</span>
+          </button>
+          <button class="tab-btn" data-tab-target="ai">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            <span>Trợ lý AI</span>
+          </button>
+        </nav>
+
+        <!-- App Toast Feedback -->
+        <div class="app-toast" id="app-toast" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="app.js?v=20261121a"></script>
+</body>
+</html>

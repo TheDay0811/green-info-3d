@@ -2223,6 +2223,11 @@ function openVideoModal() {
 document.querySelectorAll("[data-action='open-video'], #btn-open-video-top").forEach((el) => {
   el.addEventListener("click", openVideoModal);
 });
+document.querySelectorAll("[data-action='open-mobile-app']").forEach((el) => {
+  el.addEventListener("click", () => {
+    window.location.href = "./app/";
+  });
+});
 document.getElementById("btn-close-video").addEventListener("click", () => {
   storyVideo.pause();
   videoModal.classList.add("hidden");
