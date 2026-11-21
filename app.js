@@ -62,7 +62,7 @@ function loadTex(filename, repX = 1, repY = 1, isSRGB = true) {
 
 const texSolarInner = loadTex("solar_inner.jpg", 3, 2, true);
 const texSolarOuter = loadTex("solar_outer.jpg", 3, 2, true);
-const texMesh32 = loadTex("mesh_32.png", 44, 18, true);
+const texMesh32 = loadTex("mesh_32.png", 64, 10, true);
 const texMeshDoor = loadTex("mesh_32.png", 9, 14, true);
 const texMeshGable = loadTex("mesh_32.png", 26, 8, true);
 const texMelonSkin = loadTex("melon_skin.jpg", 1, 1, true);
@@ -332,16 +332,16 @@ const meshGableMat = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
   depthWrite: false,
 });
-// Clear UV Polyethylene (PE) Greenhouse Glazing Film over arched roof
+// Clear UV Polyethylene (PE) Greenhouse Glazing Film over arched roof (waterproof rain-shedding roof)
 const peRoofFilmMat = new THREE.MeshPhysicalMaterial({
-  color: 0xe0f2fe,
+  color: 0xe8f6ff,
   transparent: true,
-  opacity: 0.14,
-  roughness: 0.10,
+  opacity: 0.24,
+  roughness: 0.11,
   metalness: 0.0,
   clearcoat: 1.0,
-  clearcoatRoughness: 0.08,
-  reflectivity: 0.9,
+  clearcoatRoughness: 0.06,
+  reflectivity: 0.92,
   side: THREE.DoubleSide,
   depthWrite: false,
 });
@@ -404,10 +404,25 @@ for (const byEnd of [0, L]) {
   }
 }
 
-// Rainwater collection gutters along both eaves + Da Lat ribbed HDPE water tank!
-const gutterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.35, roughness: 0.32 });
-addTubeBetween(toThree(-W / 2 - 0.055, 0, H_SIDE - 0.03), toThree(-W / 2 - 0.055, L, H_SIDE - 0.03), 0.04, gutterMat, domeGroup);
-addTubeBetween(toThree(W / 2 + 0.055, 0, H_SIDE - 0.03), toThree(W / 2 + 0.055, L, H_SIDE - 0.03), 0.04, gutterMat, domeGroup);
+// Internal Eave Rainwater Gutters (Tucked INSIDE columns at x = ±2.91m, 9.5cm clear of sliding rail/panels!)
+const gutterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.45, roughness: 0.28, side: THREE.DoubleSide });
+function addInternalUGutter(sx) {
+  const gx = sx * (W / 2.0 - 0.09); // ±2.91 m (strictly INSIDE ±3.00m columns!)
+  const wG = 0.10, hG = 0.085, zBot = H_SIDE - 0.09;
+  const gLen = L - 0.12;
+  const basePlate = new THREE.Mesh(new THREE.BoxGeometry(wG, 0.01, gLen), gutterMat);
+  basePlate.position.copy(toThree(gx, gLen / 2, zBot));
+  const innerLip = new THREE.Mesh(new THREE.BoxGeometry(0.01, hG, gLen), gutterMat);
+  innerLip.position.copy(toThree(gx - sx * (wG / 2), gLen / 2, zBot + hG / 2));
+  const outerLock = new THREE.Mesh(new THREE.BoxGeometry(0.012, hG + 0.015, gLen), steelMat);
+  outerLock.position.copy(toThree(gx + sx * (wG / 2), gLen / 2, zBot + hG / 2));
+  domeGroup.add(basePlate, innerLip, outerLock);
+}
+addInternalUGutter(-1);
+addInternalUGutter(1);
+
+// Rear cross-collector & downspout at Y = 11.88m (safely BEHIND Khu 2 solar panels stopping at Y = 11.5m!)
+addTubeBetween(toThree(W / 2 - 0.09, 11.88, H_SIDE - 0.09), toThree(-(W / 2 - 0.09), 11.88, H_SIDE - 0.09), 0.028, gutterMat, domeGroup);
 
 const tankMat = new THREE.MeshStandardMaterial({
   map: texTankHdpe,
@@ -417,15 +432,15 @@ const tankMat = new THREE.MeshStandardMaterial({
   metalness: 0.08,
 });
 const rainTank = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 1.38, 22), tankMat);
-rainTank.position.copy(toThree(-3.9, 10.6, 0.72));
+rainTank.position.copy(toThree(-3.9, 11.65, 0.72));
 rainTank.castShadow = true;
 rainTank.receiveShadow = true;
 domeGroup.add(rainTank);
 const tankLid = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.07, 16), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 }));
-tankLid.position.copy(toThree(-3.9, 10.6, 1.43));
+tankLid.position.copy(toThree(-3.9, 11.65, 1.43));
 domeGroup.add(tankLid);
-addTubeBetween(toThree(-W / 2 - 0.055, 10.6, H_SIDE - 0.03), toThree(-3.9, 10.6, 1.38), 0.032, gutterMat, domeGroup);
-addTubeBetween(toThree(-3.9, 10.6, 0.14), toThree(-2.5, 10.6, 0.14), 0.022, new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 }), domeGroup);
+addTubeBetween(toThree(-(W / 2 - 0.09), 11.88, H_SIDE - 0.09), toThree(-3.9, 11.65, 1.38), 0.032, gutterMat, domeGroup);
+addTubeBetween(toThree(-3.9, 11.65, 0.14), toThree(-2.5, 11.2, 0.14), 0.022, new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 }), domeGroup);
 
 // Entrance Signboard ("GREEN INFO - PILOT ĐÀ LẠT 1.500 m")
 addTubeBetween(toThree(-2.1, -1.0, 0), toThree(-2.1, -1.0, 1.45), 0.025, steelMat, domeGroup);
@@ -462,50 +477,42 @@ doorHandle.position.set(doorW / 2 - 0.10, -0.05, -0.02);
 doorGroup.add(doorHandle);
 domeGroup.add(doorGroup);
 
-// Complete 100% Sealed 32-Mesh Dome Shell (sidewalls Z=0.2..2.0 + arch Z=2.0..3.6 + UV PE roof film)
+// Physically accurate Dalat Hybrid Cladding:
+// 1) Vertical sidewalls (Z = 0.22..2.0m): 32-Mesh Insect Netting for cross-ventilation
+// 2) Curved vault roof (Z = 2.0..3.6m): Smooth Waterproof UV PE Film draining into internal gutters at x = ±2.91m!
+for (const sx of [-1, 1]) {
+  const swGeo = new THREE.PlaneGeometry(L, H_SIDE - 0.2);
+  const swMesh = new THREE.Mesh(swGeo, meshMat);
+  swMesh.position.copy(toThree(sx * (W / 2.0), L / 2.0, (0.2 + H_SIDE) / 2.0));
+  swMesh.rotation.y = sx > 0 ? -Math.PI / 2 : Math.PI / 2;
+  domeGroup.add(swMesh);
+}
 {
-  const ySteps = 16, phiSteps = 24;
-  const verts = [], uvs = [], indices = [];
+  const ySteps = 16, phiSteps = 28;
   const roofVerts = [], roofUvs = [], roofIndices = [];
   for (let j = 0; j <= ySteps; j++) {
     const by = (j * L) / ySteps;
     const vCoord = j / ySteps;
-    const rowPts = [[-W / 2, 0.2]];
+    // Left gutter drip tuck -> arch curve -> right gutter drip tuck
+    const rowPts = [[-W / 2.0 + 0.09, H_SIDE - 0.06]];
     for (let i = 0; i <= phiSteps; i++) {
       const phi = -PHI_MAX + (2 * PHI_MAX * i) / phiSteps;
-      const rx = R_ARCH * Math.sin(phi);
-      const rz = Z_CENTER + R_ARCH * Math.cos(phi);
-      rowPts.push([rx, rz]);
-      const ptRoof = toThree(rx, by, rz + 0.008);
-      roofVerts.push(ptRoof.x, ptRoof.y, ptRoof.z);
-      roofUvs.push(i / phiSteps, vCoord);
+      rowPts.push([R_ARCH * Math.sin(phi), Z_CENTER + R_ARCH * Math.cos(phi) + 0.008]);
     }
-    rowPts.push([W / 2, 0.2]);
+    rowPts.push([W / 2.0 - 0.09, H_SIDE - 0.06]);
     for (let k = 0; k < rowPts.length; k++) {
       const pt = toThree(rowPts[k][0], by, rowPts[k][1]);
-      verts.push(pt.x, pt.y, pt.z);
-      uvs.push(k / (rowPts.length - 1), vCoord);
+      roofVerts.push(pt.x, pt.y, pt.z);
+      roofUvs.push(k / (rowPts.length - 1), vCoord);
     }
   }
-  const stride = phiSteps + 3;
+  const rStride = phiSteps + 3;
   for (let j = 0; j < ySteps; j++) {
-    for (let i = 0; i < stride - 1; i++) {
-      const a = j * stride + i, b = a + 1, c = (j + 1) * stride + i + 1, d2 = (j + 1) * stride + i;
-      indices.push(a, b, c, a, c, d2);
-    }
-    const rStride = phiSteps + 1;
-    for (let i = 0; i < phiSteps; i++) {
+    for (let i = 0; i < rStride - 1; i++) {
       const a = j * rStride + i, b = a + 1, c = (j + 1) * rStride + i + 1, d2 = (j + 1) * rStride + i;
       roofIndices.push(a, b, c, a, c, d2);
     }
   }
-  const coverGeo = new THREE.BufferGeometry();
-  coverGeo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
-  coverGeo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  coverGeo.setIndex(indices);
-  coverGeo.computeVertexNormals();
-  domeGroup.add(new THREE.Mesh(coverGeo, meshMat));
-
   const roofFilmGeo = new THREE.BufferGeometry();
   roofFilmGeo.setAttribute("position", new THREE.Float32BufferAttribute(roofVerts, 3));
   roofFilmGeo.setAttribute("uv", new THREE.Float32BufferAttribute(roofUvs, 2));
@@ -993,10 +1000,10 @@ const HOTSPOTS = [
     id: "hs_mesh",
     num: 2,
     pos3d: toThree(3.0, 2.6, 1.35),
-    label: "Lưới chắn côn trùng 32 Mesh",
-    badge: "BẢO VỆ DỊCH HẠI CƠ HỌC",
-    body: "Bao quanh toàn bộ vách nhà vòm bằng lưới 32 lỗ/inch vuông, ngăn chặn bọ trĩ, rệp phấn và ruồi vàng mà vẫn giữ độ thông thoáng đối lưu khí hậu cao nguyên.",
-    specs: ["Ngăn sâu bọ cơ học", "Giảm thuốc BVTV", "Cửa lùa 1,2m × 2,0m"],
+    label: "Mái PE kín nước & Lưới 32 Mesh",
+    badge: "VỎ LAI ĐÀ LẠT (PE + LƯỚI 32 MESH)",
+    body: "Vòm mái trên lợp màng PE UV kín nước để ngăn mưa lạnh & dẫn nước về máng âm; toàn bộ vách hông, đầu hồi vòm và cửa lùa bọc lưới 32 mesh ngăn côn trùng và thông gió tự nhiên.",
+    specs: ["Mái PE chống mưa & UV", "Vách & đầu hồi lưới 32 Mesh", "Chân vách PE kín nền"],
   },
   {
     id: "hs_melon",
@@ -1037,11 +1044,11 @@ const HOTSPOTS = [
   {
     id: "hs_rain",
     num: 7,
-    pos3d: toThree(-3.9, 10.6, 1.45),
-    label: "Máng thu nước mưa chống xói mòn",
-    badge: "GIẢI PHÁP ĐẶC THÙ ĐÀ LẠT",
-    body: "Thu gom nước mưa từ mái vòm vào bồn chứa tái sử dụng cho tưới nhỏ giọt, giúp hạn chế tình trạng nước mái nhà kính chảy tràn gây ngập cục bộ và khô hạn mùa khô tại Đà Lạt.",
-    specs: ["Máng xối 2 bên hông", "Bồn chứa tái sử dụng", "Giảm xói mòn đất đồi"],
+    pos3d: toThree(-3.9, 11.65, 1.45),
+    label: "Máng xối âm chống va chạm pin",
+    badge: "THU NƯỚC MƯA TÁCH HÀNH LANG PIN",
+    body: "Màng PE mái dẫn nước vào cặp máng xối âm gắn phía trong tim cột thép (x = ±2,91 m), tách hoàn toàn với ray trượt pin ngoài cột (6–13,5 cm) và gom ra cuối nhà (y = 11,88 m) về bồn chứa.",
+    specs: ["Máng âm trong cột ±2,91 m", "Thoát cuối nhà (sau Khu 2)", "0% va chạm ray trượt pin"],
   },
 ];
 
@@ -1471,7 +1478,7 @@ document.querySelectorAll("[data-action='modal-intro']").forEach((el) => {
       <h4>3 Đổi mới cốt lõi:</h4>
       <ul>
         <li><b>Mái vòm trượt lồng 2 tầng:</b> Sáng sương thu gọn vách (100% PAR); trưa nắng bức xạ cao trượt phủ mái hấp thụ nhiệt phát điện; gặp gió lốc đèo tự thu gọn an toàn (Fail-Safe).</li>
-        <li><b>Thu gom nước mưa chống xói mòn:</b> Hệ máng xối hai bên dẫn nước mái vào bồn tái sử dụng tưới nhỏ giọt.</li>
+        <li><b>Mái PE kín nước &amp; Máng xối âm chống va chạm pin:</b> Vòm mái trên bọc màng PE UV dẫn nước vào cặp máng xối âm đặt phía trong cột thép (<code>x = ±2,91 m</code>), tách biệt hoàn toàn hành lang trượt pin (<code>6–13,5 cm</code>) và gom ra cuối nhà (<code>y = 11,88 m</code>) về bồn tái sử dụng.</li>
         <li><b>Lộ trình tích hợp phần cứng (Rust):</b> Giai đoạn demo hiện tại tập trung hoàn thiện mô phỏng Web 3D & tối ưu thuật toán. Giai đoạn chế tạo phần cứng thực tế sẽ lập trình vi điều khiển nhúng & cổng Agri-Hub Gateway bằng ngôn ngữ <b>Rust (esp-rs / embassy &amp; Axum)</b> để đạt an toàn bộ nhớ tuyệt đối, tiết kiệm pin và vận hành bền bỉ 24/7.</li>
       </ul>
       <p><i>Lưu ý: Các thông số trên Web 3D là mô phỏng nguyên lý phục vụ trực quan hóa.</i></p>
