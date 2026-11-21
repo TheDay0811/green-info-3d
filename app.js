@@ -705,6 +705,8 @@ function attachFoliageWind(mat, ampScale = 1.0) {
 // 5. GREEN INFO 3D DOME STRUCTURE, FULL 32-MESH ENCLOSURE & RAINWATER TANK
 // =============================================================================
 const domeGroup = new THREE.Group();
+const windStation = new THREE.Group();
+domeGroup.add(windStation);
 scene.add(domeGroup);
 
 const steelMat = new THREE.MeshStandardMaterial({
@@ -1392,9 +1394,6 @@ addTubeBetween(toThree(-2.50, 1.26, 0.42), toThree(-2.50, 1.26, 0.97), 0.011, gu
 addTubeBetween(toThree(-2.52, 1.2, 1.54), toThree(-2.98, 1.5, 1.92), 0.010, pipeMat, domeGroup);
 
 // Freestanding Dalat Meteorological Wind & Solar Station (front-right corner x = 3.85, y = -0.45 -> 100% clear of solar panels/rails!)
-const windStation = new THREE.Group();
-domeGroup.add(windStation);
-
 const wPier = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.22, 0.46), concMat);
 wPier.position.copy(toThree(3.85, -0.45, 0.11));
 wPier.castShadow = true;
