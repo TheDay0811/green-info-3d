@@ -108,6 +108,7 @@ function makeSkyTexture() {
   ctx.fillRect(0, 0, 32, 256);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
   return tex;
 }
 
@@ -132,6 +133,7 @@ function makeSignTexture() {
   ctx.fillText("NHÀ VÒM NÔNG ĐIỆN TRƯỢT LỒNG", 256, 158);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
   return tex;
 }
 
@@ -901,15 +903,55 @@ domeGroup.add(tankLid);
 addTubeBetween(toThree(-2.92, 11.88, 1.93), toThree(-3.9, 11.65, 1.38), 0.032, gutterMat, domeGroup);
 addTubeBetween(toThree(-3.9, 11.65, 0.14), toThree(-2.5, 11.2, 0.14), 0.022, new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 }), domeGroup);
 
-// Entrance Signboard ("GREEN INFO - PILOT ĐÀ LẠT 1.500 m")
-addTubeBetween(toThree(-2.1, -1.0, 0), toThree(-2.1, -1.0, 1.45), 0.025, steelMat, domeGroup);
-const signBoard = new THREE.Mesh(
-  new THREE.BoxGeometry(1.15, 0.44, 0.04),
-  new THREE.MeshStandardMaterial({ map: makeSignTexture(), roughness: 0.38, metalness: 0.15 })
-);
-signBoard.position.copy(toThree(-2.1, -1.0, 1.32));
-signBoard.rotation.y = 0.25;
-domeGroup.add(signBoard);
+// Entrance Signboard ("GREEN INFO - PILOT ĐÀ LẠT 1.500 m") — twin outer H-frame stanchions so zero pole blocks text
+{
+  const sx = -2.1, sy = -1.0, sz = 1.32;
+  const boardW = 1.15, boardH = 0.44, boardT = 0.04;
+  const yaw = 0.25;
+  const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+  const postR = 0.022;
+  const postOff = boardW * 0.5 + postR;
+  const boardBot = sz - boardH * 0.5 - 0.015;
+  const boardTop = sz + boardH * 0.5 + 0.015;
+
+  // Flanking vertical stanchions at left & right outer edges + top/bottom horizontal rails (zero face obstruction)
+  const pLeftBot = toThree(sx - postOff * cosY, sy + postOff * sinY, 0);
+  const pLeftTop = toThree(sx - postOff * cosY, sy + postOff * sinY, boardTop + 0.014);
+  const pRightBot = toThree(sx + postOff * cosY, sy - postOff * sinY, 0);
+  const pRightTop = toThree(sx + postOff * cosY, sy - postOff * sinY, boardTop + 0.014);
+  addTubeBetween(pLeftBot, pLeftTop, postR, steelMat, domeGroup);
+  addTubeBetween(pRightBot, pRightTop, postR, steelMat, domeGroup);
+  addTubeBetween(
+    toThree(sx - postOff * cosY, sy + postOff * sinY, boardBot),
+    toThree(sx + postOff * cosY, sy - postOff * sinY, boardBot),
+    0.015, steelMat, domeGroup
+  );
+  addTubeBetween(
+    toThree(sx - postOff * cosY, sy + postOff * sinY, boardTop),
+    toThree(sx + postOff * cosY, sy - postOff * sinY, boardTop),
+    0.014, steelMat, domeGroup
+  );
+
+  // Ground anchor collars under both side posts
+  const collarGeo = new THREE.CylinderGeometry(0.052, 0.058, 0.055, 10);
+  for (const bxSign of [-1, 1]) {
+    const collar = new THREE.Mesh(collarGeo, clampMat);
+    collar.position.copy(toThree(sx + bxSign * postOff * cosY, sy - bxSign * postOff * sinY, 0.0275));
+    domeGroup.add(collar);
+  }
+
+  // Crisp powder-coated rim + clear dual-face display panels
+  const signFaceMat = new THREE.MeshStandardMaterial({ map: makeSignTexture(), roughness: 0.36, metalness: 0.12 });
+  const signRimMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.45, metalness: 0.35 });
+  const signBoard = new THREE.Mesh(
+    new THREE.BoxGeometry(boardW, boardH, boardT),
+    [signRimMat, signRimMat, signRimMat, signRimMat, signFaceMat, signFaceMat]
+  );
+  signBoard.position.copy(toThree(sx, sy, sz));
+  signBoard.rotation.y = yaw;
+  signBoard.castShadow = !isMobileDevice;
+  domeGroup.add(signBoard);
+}
 
 // Front Framed 32-Mesh Sliding Door (auto-seals exterior & opens when user walks near doorway)
 const doorW = 1.2, doorH = 2.0;
