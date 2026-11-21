@@ -244,7 +244,9 @@ function generatePlants(stageKey) {
       } else if (stageKey === "netting") {
         ripenessPct = Math.max(38, Math.min(82, 64 + outerBoost + hash * 2));
       } else {
-        ripenessPct = Math.max(54, Math.min(99, 81 + outerBoost * 2 + hash * 2.5));
+        // Staggered pollination waves along row positions so ripe, turning, and still-green melons coexist naturally
+        const cohortOffset = idx >= 15 ? -15 : idx <= 5 ? 6 : 0;
+        ripenessPct = Math.max(48, Math.min(99, 77 + outerBoost * 2 + cohortOffset + hash * 2.5));
       }
       ripenessPct = Math.round(ripenessPct);
 
@@ -283,7 +285,7 @@ function getLiveClimate() {
   const parFactor = 1.0 - 0.38 * d;
   const basePar = w.key === "rainstorm" ? 58 : w.key === "typhoon" ? 46 : 100;
   const parPct = Math.round(basePar * parFactor);
-  const parUmol = Math.round((w.key === "rainstorm" ? 420 : w.key === "typhoon" ? 310 : 980) * parFactor);
+  const parUmol = Math.round((w.key === "rainstorm" ? 420 : w.key === "typhoon" ? 310 : 1096) * parFactor);
   const tempDome =
     w.key === "heatwave"
       ? Number((w.tempOut - 6.0 * d).toFixed(1))
