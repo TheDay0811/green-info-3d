@@ -1225,7 +1225,6 @@ document.querySelectorAll("[data-action='modal-team']").forEach((el) => {
         <li><b>Nguyễn Quốc Huy (Trưởng nhóm)</b> – 24DH113268 – Khoa Công Nghệ Thông Tin</li>
         <li><b>Trần Anh Như</b> – 26DH740846 – Khoa Ngoại Ngữ (Ngôn Ngữ Trung)</li>
         <li><b>Lâm Kim Yến</b> – 25DH140299 – Khoa Công Nghệ Thông Tin (Thương Mại Điện Tử)</li>
-        <li><b>Nguyễn Ngọc Kỳ</b> – 24DH112710 – Khoa Công Nghệ Thông Tin</li>
         <li><b>Nguyễn Thành Đạt</b> – 24DH481577 – Khoa Quản Trị Kinh Doanh</li>
       </ul>
       <p><b>Liên hệ:</b> nqhuy08112006@gmail.com  •  0902637150</p>
