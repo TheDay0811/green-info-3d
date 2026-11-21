@@ -1863,6 +1863,7 @@ function setWeather(mode) {
   }
   document.getElementById("solar-slider").value = Math.round(targetDeploy * 100);
   document.getElementById("solar-pct").textContent = `${Math.round(targetDeploy * 100)}%`;
+  document.getElementById("dock-solar").classList.toggle("active", targetDeploy > 0.5);
 }
 
 function updateTelemetry(temp, par, wind, pv, modeTxt, modeCls) {
@@ -1891,6 +1892,7 @@ document.getElementById("solar-slider").addEventListener("input", (e) => {
       ? "Thu gọn (Mái PE che mưa)"
       : "Thu gọn vách hông";
   updateTelemetry(temp, par, windSpd, pv, modeTxt, val > 50 ? "tele-warn" : "tele-ok");
+  document.getElementById("dock-solar").classList.toggle("active", targetDeploy > 0.5);
 });
 
 document.querySelectorAll(".wp-chip").forEach((btn) => {
@@ -1927,7 +1929,7 @@ document.getElementById("btn-close-info").addEventListener("click", () => {
 
 document.getElementById("btn-toggle-labels").addEventListener("click", (e) => {
   const shown = document.body.classList.toggle("show-mobile-labels");
-  e.currentTarget.style.background = shown ? "#16a34a" : "rgba(3, 105, 161, 0.88)";
+  e.currentTarget.classList.toggle("active", shown);
 });
 
 function updateHotspotsProjection() {
@@ -1964,8 +1966,7 @@ if (window.innerWidth <= 860) {
 }
 
 btnToggleSidebar.addEventListener("click", () => {
-  const collapsed = sidebar.classList.toggle("collapsed");
-  btnToggleSidebar.textContent = collapsed ? "»" : "«";
+  sidebar.classList.toggle("collapsed");
 });
 btnMobileMenu.addEventListener("click", () => {
   sidebar.classList.toggle("collapsed");
@@ -1976,7 +1977,8 @@ function updateWalkUI() {
   document.getElementById("dock-walk").classList.toggle("active", isWalkMode);
   const autoBtn = document.getElementById("btn-auto-walk");
   autoBtn.classList.toggle("active", isAutoWalk);
-  autoBtn.textContent = isAutoWalk ? "⏹ Dừng bước" : "▶ Tự bước vào vườn";
+  const lbl = autoBtn.querySelector(".btn-lbl");
+  if (lbl) lbl.textContent = isAutoWalk ? "Dừng bước" : "Tự bước vào vườn";
 }
 
 document.querySelectorAll("[data-view]").forEach((el) => {
@@ -2136,7 +2138,6 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (window.innerWidth <= 860) {
     sidebar.classList.add("collapsed");
-    btnToggleSidebar.textContent = "»";
   }
 });
 

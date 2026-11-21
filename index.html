@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#14532d" />
   <title>GREEN INFO 3D – Pilot Đà Lạt | Trải nghiệm Nhà vòm Nông điện</title>
   <meta name="description" content="Trải nghiệm thực tế ảo 3D nhập vai mô hình nhà vòm nông điện trượt lồng Green Info tại Đà Lạt – Đội Hệ Sinh Thái Số, HUFLIT 2026." />
-  <link rel="stylesheet" href="styles.css?v=20261121k" />
+  <link rel="stylesheet" href="styles.css?v=20261121l" />
   <script type="importmap">
     {
       "imports": {
@@ -34,13 +34,15 @@
 
   <!-- Mobile Menu Trigger (only shown on mobile or when collapsed) -->
   <button id="btn-mobile-menu" class="glass-pill mobile-menu-btn" title="Mở danh mục tham quan">
-    <span class="ico">☰</span>
+    <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
     <span class="lbl-desktop">Danh mục</span><span class="lbl-mobile">Menu</span>
   </button>
 
-  <!-- Left Collapsible Sidebar (VT360 Style) -->
+  <!-- Left Collapsible Sidebar -->
   <aside id="sidebar" class="sidebar">
-    <button id="btn-toggle-sidebar" class="sidebar-collapse-tab" title="Thu gọn / Mở rộng menu">«</button>
+    <button id="btn-toggle-sidebar" class="sidebar-collapse-tab" title="Thu gọn / Mở rộng menu" aria-label="Thu gọn / Mở rộng menu">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+    </button>
 
     <div class="brand-header">
       <div class="brand-badge">PILOT ĐÀ LẠT (1.500 m) • VÒNG 2</div>
@@ -52,37 +54,47 @@
 
     <nav class="nav-list" id="nav-list">
       <button class="nav-item" data-action="modal-intro">
-        <span class="nav-ico">📘</span><span>GIỚI THIỆU &amp; LỘ TRÌNH RUST</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>
+        <span>GIỚI THIỆU &amp; LỘ TRÌNH RUST</span>
       </button>
       <button class="nav-item active" data-view="overview">
-        <span class="nav-ico">🚁</span><span>TOÀN CẢNH ĐỒI ĐÀ LẠT</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+        <span>TOÀN CẢNH ĐỒI ĐÀ LẠT</span>
       </button>
       <button class="nav-item" data-view="walk_entry">
-        <span class="nav-ico">🚶</span><span>NHẬP VAI ĐI BỘ VÀO VƯỜN</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M9.5 21 11 13l-2-2.5 3.5-2 2.5 2.5 2.5 1"/><path d="m13 14.5 2.5 6.5"/></svg></span>
+        <span>NHẬP VAI ĐI BỘ VÀO VƯỜN</span>
       </button>
       <button class="nav-item" data-view="interior_melon">
-        <span class="nav-ico">🍈</span><span>LUỐNG DƯA LƯỚI BÊN TRONG</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>
+        <span>LUỐNG DƯA LƯỚI BÊN TRONG</span>
       </button>
       <button class="nav-item" data-view="solar_rail">
-        <span class="nav-ico">☀️</span><span>CƠ CHẾ PIN TRƯỢT LỒNG</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+        <span>CƠ CHẾ PIN TRƯỢT LỒNG</span>
       </button>
       <button class="nav-item" data-view="iot_hub">
-        <span class="nav-ico">🤖</span><span>TỦ ĐIỀU KHIỂN IOT &amp; AI</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3m6-3v3M9 20v3m6-3v3M20 9h3m-3 6h3M1 9h3m-3 6h3"/></svg></span>
+        <span>TỦ ĐIỀU KHIỂN IOT &amp; AI</span>
       </button>
 
       <div class="sidebar-divider"></div>
 
       <button class="nav-item" data-action="toggle-map">
-        <span class="nav-ico">🗺️</span><span>SƠ ĐỒ MẶT BẰNG 2D</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></span>
+        <span>SƠ ĐỒ MẶT BẰNG 2D</span>
       </button>
       <button class="nav-item" data-action="open-video">
-        <span class="nav-ico">🎬</span><span>VIDEO STORY (01:40)</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polygon points="10 8.5 16 12 10 15.5 10 8.5" fill="currentColor" stroke="none"/></svg></span>
+        <span>VIDEO STORY (01:40)</span>
       </button>
       <button class="nav-item" data-action="toggle-weather-bar">
-        <span class="nav-ico">🌦️</span><span>THỜI TIẾT ĐÀ LẠT &amp; PIN</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v2m4.93 2.93-1.41 1.41M20 12h2M4.93 6.93l1.41 1.41M16 12a4 4 0 0 0-7.9-1"/><path d="M8.5 21h9a3.5 3.5 0 0 0 .4-6.98A4.5 4.5 0 0 0 9.1 12.2 3 3 0 0 0 8.5 21Z"/></svg></span>
+        <span>THỜI TIẾT ĐÀ LẠT &amp; PIN</span>
       </button>
       <button class="nav-item" data-action="modal-team">
-        <span class="nav-ico">👥</span><span>ĐỘI HỆ SINH THÁI SỐ</span>
+        <span class="nav-ico"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span>ĐỘI HỆ SINH THÁI SỐ</span>
       </button>
     </nav>
   </aside>
@@ -115,29 +127,31 @@
   <!-- Top-Right Action Pills -->
   <div class="top-right-bar">
     <button id="btn-open-video-top" class="cta-video-btn">
-      <span>▶</span> <span class="lbl-desktop">XEM VIDEO STORY</span><span class="lbl-mobile">Video Story</span>
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/></svg>
+      <span class="lbl-desktop">XEM VIDEO STORY</span><span class="lbl-mobile">Video Story</span>
     </button>
     <button id="btn-toggle-weather-top" class="glass-pill">
-      <span>🌦️</span> <span class="lbl-desktop">Thời tiết &amp; Pin</span><span class="lbl-mobile">Thời tiết</span>
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v2m4.93 2.93-1.41 1.41M20 12h2M4.93 6.93l1.41 1.41M16 12a4 4 0 0 0-7.9-1"/><path d="M8.5 21h9a3.5 3.5 0 0 0 .4-6.98A4.5 4.5 0 0 0 9.1 12.2 3 3 0 0 0 8.5 21Z"/></svg>
+      <span class="lbl-desktop">Thời tiết &amp; Pin</span><span class="lbl-mobile">Thời tiết</span>
     </button>
   </div>
 
   <!-- Right-Edge Quick-Jump Buttons -->
   <div class="right-quick-rail">
     <button class="quick-circle-btn" data-view="overview" title="Toàn cảnh Đà Lạt">
-      <span>🚁</span>
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
       <small>Toàn cảnh</small>
     </button>
     <button class="quick-circle-btn" data-view="walk_entry" title="Nhập vai đi bộ vào nhà vòm">
-      <span>🚶</span>
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M9.5 21 11 13l-2-2.5 3.5-2 2.5 2.5 2.5 1"/><path d="m13 14.5 2.5 6.5"/></svg>
       <small>Nhập vai</small>
     </button>
     <button class="quick-circle-btn" data-action="toggle-map" title="Sơ đồ mặt bằng 2D">
-      <span>🗺️</span>
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
       <small>Sơ đồ</small>
     </button>
     <button id="btn-toggle-labels" class="quick-circle-btn mobile-only-btn" title="Hiện/Ẩn chữ nhãn hotspot">
-      <span>🏷️</span>
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg>
       <small>Nhãn</small>
     </button>
   </div>
@@ -146,13 +160,27 @@
   <div id="weather-panel" class="weather-panel">
     <div class="wp-header">
       <span>MÔ PHỎNG KHÍ HẬU ĐÀ LẠT &amp; TẤM PIN TRƯỢT LỒNG</span>
-      <button id="btn-close-wp" class="wp-close" title="Thu gọn bảng">✕</button>
+      <button id="btn-close-wp" class="wp-close" title="Thu gọn bảng" aria-label="Thu gọn bảng">
+        <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="wp-presets">
-      <button class="wp-chip active" data-weather="morning">🌫️ Sáng sương (19°C)</button>
-      <button class="wp-chip" data-weather="heatwave">☀️ Trưa bức xạ (37°C)</button>
-      <button class="wp-chip" data-weather="rainstorm">🌧️ Mưa dông (18°C)</button>
-      <button class="wp-chip" data-weather="typhoon">💨 Gió lốc (Fail-Safe)</button>
+      <button class="wp-chip active" data-weather="morning">
+        <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15h18M5 19h14M12 4v2m6.36 1.64-1.42 1.42M5.64 7.64l1.42 1.42M8 12a4 4 0 0 1 8 0"/></svg>
+        <span>Sáng sương (19°C)</span>
+      </button>
+      <button class="wp-chip" data-weather="heatwave">
+        <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <span>Trưa bức xạ (37°C)</span>
+      </button>
+      <button class="wp-chip" data-weather="rainstorm">
+        <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M8 19v2m4-4v2m4-2v2"/></svg>
+        <span>Mưa dông (18°C)</span>
+      </button>
+      <button class="wp-chip" data-weather="typhoon">
+        <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
+        <span>Gió lốc (Fail-Safe)</span>
+      </button>
     </div>
     <div class="wp-slider-row">
       <label for="solar-slider"><span class="lbl-desktop">Vị trí tấm pin cong (0% Vách → 100% Đỉnh):</span><span class="lbl-mobile">Trượt pin (0–100%):</span></label>
@@ -171,15 +199,24 @@
         <div id="joystick-knob" class="joystick-knob"></div>
       </div>
       <div class="walk-mob-btns">
-        <button id="btn-auto-walk" class="auto-walk-btn">▶ Tự bước vào vườn</button>
-        <button id="btn-gyro" class="gyro-btn">📱 Xoay máy 360°</button>
+        <button id="btn-auto-walk" class="auto-walk-btn">
+          <svg class="ui-ico-sm ico-play" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/></svg>
+          <svg class="ui-ico-sm ico-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none"/></svg>
+          <span class="btn-lbl">Tự bước vào vườn</span>
+        </button>
+        <button id="btn-gyro" class="gyro-btn">
+          <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          <span>Xoay máy 360°</span>
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Floating Scene/Hotspot Info Card (Bottom-Sheet on Mobile!) -->
   <div id="info-card" class="info-card hidden">
-    <button id="btn-close-info" class="card-close">✕</button>
+    <button id="btn-close-info" class="card-close" aria-label="Đóng">
+      <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <div id="info-badge" class="info-badge">THÔNG SỐ KỸ THUẬT</div>
     <h3 id="info-title">Tên điểm</h3>
     <p id="info-body">Mô tả chi tiết...</p>
@@ -193,7 +230,9 @@
         <div class="drawer-title">SƠ ĐỒ MẶT BẰNG NHÀ VÒM ĐÀ LẠT (6 m × 12 m)</div>
         <div class="drawer-sub">Nhấn vào điểm ghim đỏ để dịch chuyển tức thì trong không gian 3D</div>
       </div>
-      <button id="btn-close-map" class="drawer-close">✕</button>
+      <button id="btn-close-map" class="drawer-close" aria-label="Đóng">
+        <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="map-svg-wrap">
       <svg viewBox="0 0 420 620" class="floorplan-svg" aria-label="Sơ đồ nhà vòm Green Info 6m x 12m">
@@ -251,7 +290,9 @@
           <div class="drawer-title">VIDEO STORY: CÂU CHUYỆN GREEN INFO (01:40)</div>
           <div class="drawer-sub">Từ nỗi lo nắng nóng, mưa bão, sâu bọ đến lá chắn nông điện tự chủ</div>
         </div>
-        <button id="btn-close-video" class="drawer-close">✕</button>
+        <button id="btn-close-video" class="drawer-close" aria-label="Đóng">
+          <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
       <div class="video-container">
         <video id="story-video" controls playsinline preload="none">
@@ -267,23 +308,41 @@
     <div class="text-modal-card">
       <div class="drawer-header">
         <div id="tm-title" class="drawer-title">GIỚI THIỆU DỰ ÁN</div>
-        <button id="btn-close-tm" class="drawer-close">✕</button>
+        <button id="btn-close-tm" class="drawer-close" aria-label="Đóng">
+          <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
       <div id="tm-body" class="tm-body"></div>
     </div>
   </div>
 
-  <!-- Bottom-Center 7-Button Circular Dock -->
+  <!-- Bottom-Center Studio Action Dock -->
   <div class="bottom-dock">
-    <button id="dock-prev" class="dock-btn" title="Góc nhìn trước">⏮</button>
-    <button id="dock-walk" class="dock-btn" title="Bật/Tắt chế độ Nhập vai đi bộ">🚶</button>
-    <button id="dock-audio" class="dock-btn" title="Đọc thuyết minh khu vực hiện tại">🔊</button>
-    <button id="dock-autorotate" class="dock-btn active" title="Tự động xoay tham quan">🔄</button>
-    <button id="dock-solar" class="dock-btn" title="Trượt tấm pin Thu gọn ↔ Phủ nóc">☀️</button>
-    <button id="dock-fullscreen" class="dock-btn" title="Toàn màn hình">⛶</button>
-    <button id="dock-next" class="dock-btn" title="Góc nhìn tiếp theo">⏭</button>
+    <button id="dock-prev" class="dock-btn" title="Góc nhìn trước" aria-label="Góc nhìn trước">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button id="dock-walk" class="dock-btn" title="Bật/Tắt chế độ Nhập vai đi bộ" aria-label="Nhập vai đi bộ">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M9.5 21 11 13l-2-2.5 3.5-2 2.5 2.5 2.5 1"/><path d="m13 14.5 2.5 6.5"/></svg>
+    </button>
+    <button id="dock-audio" class="dock-btn" title="Đọc thuyết minh khu vực hiện tại" aria-label="Thuyết minh">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+    </button>
+    <button id="dock-autorotate" class="dock-btn active" title="Tự động xoay tham quan" aria-label="Tự động xoay">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+    </button>
+    <button id="dock-solar" class="dock-btn" title="Trượt tấm pin Thu gọn ↔ Phủ nóc" aria-label="Trượt tấm pin">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
+    <button id="dock-fullscreen" class="dock-btn" title="Toàn màn hình" aria-label="Toàn màn hình">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    </button>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button id="dock-next" class="dock-btn" title="Góc nhìn tiếp theo" aria-label="Góc nhìn tiếp theo">
+      <svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
   </div>
 
-  <script type="module" src="./app.js?v=20261121k"></script>
+  <script type="module" src="./app.js?v=20261121l"></script>
 </body>
 </html>
