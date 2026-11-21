@@ -881,47 +881,153 @@ for (let r = 0; r < rowXCoords.length; r++) {
 domeGroup.add(bagInst, soilInst, dripInst, cordInst, stemInst, melonInst, calyxInst, leafInst);
 
 // =============================================================================
-// 8. INTERACTIVE IOT HARDWARE PROPS (Industrial Enclosure, LiFePO4, Anemometer)
+// 8. GROUNDED IOT CONTROL RACK, LiFePO4 BANK & REALISTIC METEOROLOGICAL STATION
 // =============================================================================
+const iotPlinth = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.14, 0.64), concMat);
+iotPlinth.position.copy(toThree(-2.56, 1.2, 0.09));
+iotPlinth.castShadow = true;
+iotPlinth.receiveShadow = true;
+domeGroup.add(iotPlinth);
+
+// Galvanized H-Frame Stand bolted to concrete plinth + lateral brace to column
+for (const pyPost of [0.98, 1.42]) {
+  addTubeBetween(toThree(-2.58, pyPost, 0.15), toThree(-2.58, pyPost, 1.62), 0.02, steelMat, domeGroup);
+  const basePlate = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.015, 0.11), clampMat);
+  basePlate.position.copy(toThree(-2.58, pyPost, 0.165));
+  domeGroup.add(basePlate);
+}
+addTubeBetween(toThree(-2.58, 0.96, 1.04), toThree(-2.58, 1.44, 1.04), 0.016, steelMat, domeGroup);
+addTubeBetween(toThree(-2.58, 0.96, 1.44), toThree(-2.58, 1.44, 1.44), 0.016, steelMat, domeGroup);
+// Tie-back strut anchoring rack rigidly to column at (x = -3.00, y = 1.50, z = 1.58)
+addTubeBetween(toThree(-2.58, 1.42, 1.58), toThree(-3.00, 1.50, 1.58), 0.014, steelMat, domeGroup);
+
 const iotBodyMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.35, roughness: 0.38 });
 const iotFaceMat = new THREE.MeshStandardMaterial({ map: texIotPanel, roughness: 0.32, metalness: 0.12 });
 const iotBox = new THREE.Mesh(
   new THREE.BoxGeometry(0.42, 0.56, 0.22),
   [iotBodyMat, iotBodyMat, iotBodyMat, iotBodyMat, iotFaceMat, iotFaceMat]
 );
-iotBox.position.copy(toThree(-2.55, 1.2, 1.25));
+iotBox.position.copy(toThree(-2.52, 1.2, 1.25));
 iotBox.rotation.y = Math.PI / 2;
 iotBox.castShadow = true;
 domeGroup.add(iotBox);
 
+// Sloped waterproof rain/condensation canopy hood over IP65 cabinet
+const iotHood = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.022, 0.48), clampMat);
+iotHood.position.copy(toThree(-2.51, 1.2, 1.55));
+iotHood.rotation.z = -0.10;
+domeGroup.add(iotHood);
+
 const iotLed = new THREE.Mesh(
-  new THREE.SphereGeometry(0.025, 8, 8),
+  new THREE.SphereGeometry(0.022, 8, 8),
   new THREE.MeshBasicMaterial({ color: 0x22c55e })
 );
-iotLed.position.copy(toThree(-2.55, 1.2, 1.56));
+iotLed.position.copy(toThree(-2.51, 1.2, 1.59));
 domeGroup.add(iotLed);
 
+// LiFePO4 Battery Enclosure sitting solidly ON TOP of the concrete plinth (z = 0.16..0.42 m -> zero floating!)
 const battBox = new THREE.Mesh(
-  new THREE.BoxGeometry(0.46, 0.32, 0.30),
-  new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.48, metalness: 0.25 })
+  new THREE.BoxGeometry(0.30, 0.26, 0.44),
+  new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.46, metalness: 0.28 })
 );
-battBox.position.copy(toThree(-2.55, 1.2, 0.45));
+battBox.position.copy(toThree(-2.52, 1.2, 0.29));
 battBox.castShadow = true;
+battBox.receiveShadow = true;
 domeGroup.add(battBox);
-addTubeBetween(toThree(-2.55, 1.2, 0.61), toThree(-2.55, 1.2, 0.97), 0.012, pipeMat, domeGroup);
+// Battery mounting straps + DC power conduit up into cabinet bottom glands
+const battStrap = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.025, 0.46), clampMat);
+battStrap.position.copy(toThree(-2.52, 1.2, 0.415));
+domeGroup.add(battStrap);
+addTubeBetween(toThree(-2.50, 1.14, 0.42), toThree(-2.50, 1.14, 0.97), 0.013, pipeMat, domeGroup);
+addTubeBetween(toThree(-2.50, 1.26, 0.42), toThree(-2.50, 1.26, 0.97), 0.011, gutterMat, domeGroup);
+addTubeBetween(toThree(-2.52, 1.2, 1.54), toThree(-2.98, 1.5, 1.92), 0.010, pipeMat, domeGroup);
 
-addTubeBetween(toThree(3.5, 1.5, 0), toThree(3.5, 1.5, 2.7), 0.025, steelMat, domeGroup);
-const anemoRotor = new THREE.Group();
-anemoRotor.position.copy(toThree(3.5, 1.5, 2.75));
-for (let k = 0; k < 3; k++) {
-  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.02), steelMat);
-  arm.rotation.y = (k * 2 * Math.PI) / 3;
-  const cup = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35 }));
-  cup.position.x = 0.16;
-  arm.add(cup);
-  anemoRotor.add(arm);
+// Realistic Dalat Meteorological Wind & Solar Station (outside right wall at x = 3.55, y = 1.50)
+const windStation = new THREE.Group();
+domeGroup.add(windStation);
+
+const wPier = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.18, 0.38), concMat);
+wPier.position.copy(toThree(3.55, 1.5, 0.10));
+wPier.castShadow = true;
+wPier.receiveShadow = true;
+windStation.add(wPier);
+
+const wFlange = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.18), clampMat);
+wFlange.position.copy(toThree(3.55, 1.5, 0.20));
+windStation.add(wFlange);
+
+addTubeBetween(toThree(3.55, 1.5, 0.20), toThree(3.55, 1.5, 2.86), 0.026, steelMat, windStation);
+// Steel horizontal wall-brace connecting mast cleanly to greenhouse bay-1 column
+addTubeBetween(toThree(3.00, 1.5, 2.00), toThree(3.55, 1.5, 2.00), 0.016, steelMat, windStation);
+
+// Outdoor LoRa telemetry junction box + Louvered Stevenson Radiation Shield (Temp/RH)
+const wBox = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.12), iotBodyMat);
+wBox.position.copy(toThree(3.46, 1.5, 1.66));
+wBox.castShadow = true;
+windStation.add(wBox);
+
+const shieldMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.05 });
+addTubeBetween(toThree(3.55, 1.5, 2.18), toThree(3.36, 1.5, 2.18), 0.010, steelMat, windStation);
+for (let ds = 0; ds < 6; ds++) {
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.075, 0.012, 16), shieldMat);
+  plate.position.copy(toThree(3.36, 1.5, 2.11 + ds * 0.024));
+  windStation.add(plate);
 }
-domeGroup.add(anemoRotor);
+
+// Horizontal Anodized Instrument Cross-Arm at z = 2.75 m
+addTubeBetween(toThree(3.55, 1.12, 2.75), toThree(3.55, 1.88, 2.75), 0.015, steelMat, windStation);
+addTubeBetween(toThree(3.55, 1.12, 2.75), toThree(3.55, 1.12, 2.84), 0.014, clampMat, windStation);
+addTubeBetween(toThree(3.55, 1.88, 2.75), toThree(3.55, 1.88, 2.84), 0.014, clampMat, windStation);
+
+// True 3-Cup Hollow Hemisphere Anemometer (North side of cross-arm, y = 1.12 m)
+const anemoRotor = new THREE.Group();
+anemoRotor.position.copy(toThree(3.55, 1.12, 2.85));
+const rotorHub = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.05, 12), clampMat);
+anemoRotor.add(rotorHub);
+const cupOuterMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.32, metalness: 0.35, side: THREE.DoubleSide });
+const cupRimMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35, metalness: 0.2 });
+const cupGeo = new THREE.SphereGeometry(0.042, 14, 10, 0, Math.PI);
+const rimGeo = new THREE.TorusGeometry(0.042, 0.004, 8, 16);
+for (let k = 0; k < 3; k++) {
+  const armPivot = new THREE.Group();
+  armPivot.rotation.y = (k * 2 * Math.PI) / 3;
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.16, 6), steelMat);
+  arm.rotation.z = Math.PI / 2;
+  arm.position.x = 0.08;
+  const cup = new THREE.Mesh(cupGeo, cupOuterMat);
+  cup.position.x = 0.165;
+  const rim = new THREE.Mesh(rimGeo, cupRimMat);
+  rim.position.x = 0.165;
+  armPivot.add(arm, cup, rim);
+  anemoRotor.add(armPivot);
+}
+windStation.add(anemoRotor);
+
+// Aerodynamic Wind Direction Vane (South side of cross-arm, y = 1.88 m)
+const windVane = new THREE.Group();
+windVane.position.copy(toThree(3.55, 1.88, 2.86));
+const vaneHub = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.020, 0.04, 10), clampMat);
+windVane.add(vaneHub);
+const vaneRod = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.28, 6), steelMat);
+vaneRod.rotation.z = Math.PI / 2;
+windVane.add(vaneRod);
+const vaneNose = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.06, 8), clampMat);
+vaneNose.rotation.z = -Math.PI / 2;
+vaneNose.position.x = 0.15;
+const vaneFin = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.085, 0.006), cupRimMat);
+vaneFin.position.set(-0.13, 0.025, 0);
+windVane.add(vaneNose, vaneFin);
+windStation.add(windVane);
+
+// Top-center Solar Pyranometer Dome + Lightning Finial
+const pyraBase = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.025, 14), shieldMat);
+pyraBase.position.copy(toThree(3.55, 1.5, 2.87));
+const pyraGlass = new THREE.Mesh(
+  new THREE.SphereGeometry(0.028, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+  new THREE.MeshPhysicalMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.72, roughness: 0.06, clearcoat: 1.0 })
+);
+pyraGlass.position.copy(toThree(3.55, 1.5, 2.88));
+windStation.add(pyraBase, pyraGlass);
 
 const soilProbe = new THREE.Mesh(
   new THREE.CylinderGeometry(0.03, 0.022, 0.36, 10),
@@ -1023,20 +1129,20 @@ const HOTSPOTS = [
   {
     id: "hs_iot",
     num: 4,
-    pos3d: toThree(-2.55, 1.2, 1.55),
+    pos3d: toThree(-2.52, 1.2, 1.62),
     label: "Tủ điều khiển biên AI & Fail-Safe",
     badge: "ĐIỀU KHIỂN LAI & LỘ TRÌNH RUST",
-    body: "Giai đoạn đầu thử nghiệm dùng ESP32 Rule-Based + AI dự báo; giai đoạn thương mại hóa sẽ nâng cấp firmware bằng Rust (esp-rs/embassy) để đảm bảo an toàn bộ nhớ 24/7.",
-    specs: ["ESP32 Low-Power IoT", "Nâng cấp Rust (GĐ sau)", "Open API Dashboard"],
+    body: "Đặt trên bệ bê tông chống ẩm & giá thép H cố định xuống sàn; giai đoạn đầu dùng ESP32 Rule-Based + AI dự báo và định hướng thương mại hóa nâng cấp firmware Rust (esp-rs/embassy).",
+    specs: ["Bệ bê tông + Khung thép H", "Ắc quy LiFePO4 nối ống kín", "Nâng cấp Rust (GĐ sau)"],
   },
   {
     id: "hs_wind",
     num: 5,
-    pos3d: toThree(3.5, 1.5, 2.85),
-    label: "Trạm đo gió & Anemometer",
+    pos3d: toThree(3.55, 1.5, 3.02),
+    label: "Trạm đo gió & Khí tượng Đà Lạt",
     badge: "AN TOÀN GIÓ LỐC CAO NGUYÊN",
-    body: "Theo dõi liên tục tốc độ gió vùng đèo/thung lũng Đà Lạt. Khi gió giật vượt ngưỡng, lệnh Fail-Safe ưu tiên kéo toàn bộ pin thu gọn về vách đứng hạ tâm gió.",
-    specs: ["Ưu tiên ngắt cứng Fail-Safe", "Giảm lực nâng mái", "Hoạt động 24/7"],
+    body: "Cột đo khí tượng cố định trên móng bê tông: gồm 3 chén rỗng đo tốc độ gió, cánh đuôi chỉ hướng gió, tán bức xạ nhiệt/ẩm Stevenson & cảm biến Pyranometer kích hoạt ngắt Fail-Safe khi gió giật mạnh.",
+    specs: ["3 chén gió + Cánh hướng gió", "Tán bức xạ + Pyranometer", "Ưu tiên ngắt cứng Fail-Safe"],
   },
   {
     id: "hs_soil",
@@ -1611,6 +1717,7 @@ function animate(now) {
 
   const windSpeed = currentWeather === "typhoon" ? 18.0 : currentWeather === "rainstorm" ? 8.0 : 2.5;
   anemoRotor.rotation.y += windSpeed * dt;
+  windVane.rotation.y = -0.35 + Math.sin(now * 0.002) * (currentWeather === "typhoon" ? 0.38 : 0.12);
   const swayAmp = currentWeather === "typhoon" ? 0.08 : currentWeather === "rainstorm" ? 0.035 : 0.012;
   pineCrowns.forEach((cr, idx) => {
     cr.rotation.z = Math.sin(now * 0.0025 + idx) * swayAmp;
