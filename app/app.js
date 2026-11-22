@@ -772,6 +772,9 @@ function answerAiQuestion(qRaw) {
   const ai = computeAiPlan();
   const { clim, stg, counts } = ai;
 
+  if (q.includes("camera") || q.includes("chi phí") || q.includes("nhân công") || q.includes("tự động") || q.includes("bón phân")) {
+    return `Hệ thống chỉ lắp <b>1–2 Camera dùng chung (~500 nghìn – 1 triệu VNĐ)</b> chạy dọc hành lang giữa hoặc gắn đầu luống để tự động quét hết 84 gốc kết hợp 2 trạm đất A4/C14 và tưới nhỏ giọt tự động. Nhờ vậy nông dân hầu như <b>chỉ cần ra vườn khi bón phân bổ sung hoặc cắt quả chín</b> (${counts.ripe} gốc sẵn sàng hái).`;
+  }
   if (q.includes("thu hoạch") || q.includes("bao lâu") || q.includes("chín") || q.includes("xanh")) {
     return `Hiện vườn 84 gốc đang ở <b>${stg.label}</b>: đã có <b>${counts.ripe} quả chín</b> (có thể cắt ngay), <b>${counts.turning} quả sắp chín</b> và <b>${counts.green} quả còn xanh</b>. Độ ngọt trung bình <b>${counts.avgBrix}° Brix</b>; đợt rộ kế tiếp thu hoạch sau khoảng <b>${counts.avgDaysLeft} ngày nữa</b>.`;
   }
