@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { MqttLiteClient } from "./mqtt_lite.js";
 
 // =============================================================================
 // 1. GREENHOUSE GEOMETRIC CONSTANTS (Exact 1:1 match to build_greenhouse.py)
@@ -2073,6 +2074,112 @@ function updateTelemetry(temp, par, wind, pv, modeTxt, modeCls) {
   mEl.className = `tele-val ${modeCls}`;
 }
 
+// =============================================================================
+// 11B. REAL-TIME WOKWI HARDWARE <-> 3D DIGITAL TWIN MQTT BRIDGE
+// =============================================================================
+const _hilParams = new URLSearchParams(window.location.search);
+const WOKWI_ROOM = _hilParams.get("hil") || "pilot01";
+const TOPIC_TELE = `greeninfo/v2/${WOKWI_ROOM}/telemetry`;
+const TOPIC_CMD = `greeninfo/v2/${WOKWI_ROOM}/cmd`;
+let wokwiClient = null;
+let wokwiActive = false;
+let liveWindKmh = null;
+let liveWindGustAmp = null;
+
+function setWokwiStatusUI(txt, cls = "") {
+  const st = document.getElementById("wokwi-status");
+  if (st) {
+    st.textContent = txt;
+    st.className = `hil-status ${cls}`;
+  }
+  const btn = document.getElementById("btn-wokwi-link");
+  if (btn) btn.classList.toggle("active", wokwiActive);
+}
+
+function applyHardwarePacket(pkt) {
+  const temp = Number(pkt.temp_c ?? 28);
+  const par = Number(pkt.par_pct ?? 80);
+  const wind = Number(pkt.wind_kmh ?? 8);
+  const isRain = Boolean(pkt.rain);
+  const pvPct = Math.max(0, Math.min(100, Number(pkt.pv_pct ?? 0)));
+  const isFailsafe = Boolean(pkt.failsafe);
+  const modeStr = String(pkt.mode || "LIVE WOKWI");
+
+  targetDeploy = pvPct / 100.0;
+  liveWindKmh = wind;
+  liveWindGustAmp = isFailsafe ? 0.14 : isRain ? 0.065 : Math.min(0.12, 0.018 + (wind / 75) * 0.1);
+  rainLines.visible = isRain;
+
+  if (isFailsafe) {
+    sunLight.intensity = 1.05;
+    sunLight.color.setHex(0xcbd5e1);
+    valleyMistMat.opacity = 0.45;
+  } else if (isRain) {
+    sunLight.intensity = 1.15;
+    sunLight.color.setHex(0xe2e8f0);
+    valleyMistMat.opacity = 0.42;
+  } else if (pvPct >= 50) {
+    sunLight.intensity = 2.95;
+    sunLight.color.setHex(0xffedd5);
+    valleyMistMat.opacity = 0.15;
+  } else {
+    sunLight.intensity = 2.05;
+    sunLight.color.setHex(0xfffbeb);
+    valleyMistMat.opacity = 0.32;
+  }
+
+  const pvScale = isRain || isFailsafe ? 0.35 : 1.0;
+  const pvKw = Number(((0.6 + 2.4 * targetDeploy) * pvScale).toFixed(1));
+  const modeCls = isFailsafe ? "tele-danger" : pvPct >= 50 ? "tele-warn" : "tele-ok";
+  updateTelemetry(temp, par, wind, pvKw, `WOKWI: ${modeStr}`, modeCls);
+
+  document.getElementById("solar-slider").value = Math.round(pvPct);
+  document.getElementById("solar-pct").textContent = `${Math.round(pvPct)}%`;
+  document.getElementById("dock-solar").classList.toggle("active", targetDeploy > 0.5);
+  setWokwiStatusUI(`LIVE: Pin ${Math.round(pvPct)}% • Gió ${wind}km/h • ${temp.toFixed(1)}°C`, "live");
+}
+
+function sendWokwiCmd(obj) {
+  if (wokwiActive && wokwiClient && wokwiClient.connected) {
+    wokwiClient.publish(TOPIC_CMD, JSON.stringify(obj));
+  }
+}
+
+function toggleWokwiLink(forceOn = null) {
+  const nextState = forceOn !== null ? forceOn : !wokwiActive;
+  if (!nextState) {
+    wokwiActive = false;
+    liveWindKmh = null;
+    liveWindGustAmp = null;
+    if (wokwiClient) wokwiClient.disconnect();
+    wokwiClient = null;
+    setWokwiStatusUI("Offline (Mô phỏng Web)");
+    return;
+  }
+  wokwiActive = true;
+  setWokwiStatusUI("Đang kết nối EMQX...", "warn");
+  wokwiClient = new MqttLiteClient({
+    onStatus: (st) => {
+      if (!wokwiActive) return;
+      if (st === "connected") {
+        wokwiClient.subscribe(TOPIC_TELE);
+        setWokwiStatusUI(`Đã nối MQTT — Chờ Wokwi (${WOKWI_ROOM})...`, "warn");
+      } else if (st === "error") {
+        setWokwiStatusUI("Lỗi mạng MQTT WSS", "");
+      }
+    },
+    onMessage: (_topic, payload) => {
+      try {
+        const pkt = JSON.parse(payload);
+        applyHardwarePacket(pkt);
+      } catch (_) {}
+    },
+  });
+  wokwiClient.connect(`gi-3d-${Math.random().toString(16).slice(2, 7)}`);
+}
+
+document.getElementById("btn-wokwi-link").addEventListener("click", () => toggleWokwiLink());
+
 document.getElementById("solar-slider").addEventListener("input", (e) => {
   const val = Number(e.target.value);
   targetDeploy = val / 100.0;
@@ -2090,10 +2197,16 @@ document.getElementById("solar-slider").addEventListener("input", (e) => {
       : "Thu gọn vách hông";
   updateTelemetry(temp, par, windSpd, pv, modeTxt, val > 50 ? "tele-warn" : "tele-ok");
   document.getElementById("dock-solar").classList.toggle("active", targetDeploy > 0.5);
+  sendWokwiCmd({ pv_pct: val });
 });
 
 document.querySelectorAll(".wp-chip").forEach((btn) => {
-  btn.addEventListener("click", () => setWeather(btn.dataset.weather));
+  btn.addEventListener("click", () => {
+    liveWindKmh = null;
+    liveWindGustAmp = null;
+    setWeather(btn.dataset.weather);
+    sendWokwiCmd({ pv_pct: Math.round(targetDeploy * 100), mode: btn.dataset.weather });
+  });
 });
 
 // =============================================================================
@@ -2314,7 +2427,10 @@ document.getElementById("dock-autorotate").addEventListener("click", (e) => {
   e.currentTarget.classList.toggle("active", isAutoRotate);
 });
 document.getElementById("dock-solar").addEventListener("click", () => {
+  liveWindKmh = null;
+  liveWindGustAmp = null;
   setWeather(targetDeploy > 0.5 ? "morning" : "heatwave");
+  sendWokwiCmd({ pv_pct: Math.round(targetDeploy * 100) });
 });
 document.getElementById("dock-fullscreen").addEventListener("click", () => {
   if (!document.fullscreenElement) {
@@ -2348,6 +2464,9 @@ document.getElementById("btn-auto-walk").addEventListener("click", () => {
 // 14. MAIN RENDER LOOP
 // =============================================================================
 const _qp = new URLSearchParams(window.location.search);
+if (_qp.has("hil")) {
+  setTimeout(() => toggleWokwiLink(true), 400);
+}
 if (_qp.get("clean") === "1") {
   document.body.classList.add("clean-shot");
   isAutoRotate = false;
@@ -2410,10 +2529,14 @@ function animate(now) {
   currentDoorOpen += (targetDoorOpen - currentDoorOpen) * Math.min(1, dt * 4.5);
   doorGroup.position.x = doorCenterClosed.x - currentDoorOpen * (doorW * 0.96);
 
-  const windSpeed = currentWeather === "typhoon" ? 18.0 : currentWeather === "rainstorm" ? 8.0 : 2.5;
+  const windSpeed = liveWindKmh !== null
+    ? Math.max(0.8, liveWindKmh * 0.34)
+    : currentWeather === "typhoon" ? 18.0 : currentWeather === "rainstorm" ? 8.0 : 2.5;
   anemoRotor.rotation.y += windSpeed * dt;
-  windVane.rotation.y = -0.35 + Math.sin(now * 0.002) * (currentWeather === "typhoon" ? 0.38 : 0.12);
-  const targetAmp = currentWeather === "typhoon" ? 0.14 : currentWeather === "rainstorm" ? 0.065 : 0.022;
+  windVane.rotation.y = -0.35 + Math.sin(now * 0.002) * (currentWeather === "typhoon" || (liveWindKmh && liveWindKmh >= 45) ? 0.38 : 0.12);
+  const targetAmp = liveWindGustAmp !== null
+    ? liveWindGustAmp
+    : currentWeather === "typhoon" ? 0.14 : currentWeather === "rainstorm" ? 0.065 : 0.022;
   foliageWindUniforms.uTime.value = now * 0.001;
   foliageWindUniforms.uAmp.value += (targetAmp - foliageWindUniforms.uAmp.value) * Math.min(1, dt * 3.0);
 

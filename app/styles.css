@@ -389,6 +389,16 @@ body.full-view .phone-screen {
   border-color: #dc2626;
   color: #ffffff;
 }
+.mss-chip.hil {
+  border-color: #0284c7;
+  color: #0369a1;
+  background: #f0f9ff;
+}
+.mss-chip.hil.active, #btn-sb-wokwi.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #ffffff;
+}
 .mss-sep {
   width: 1px;
   height: 16px;

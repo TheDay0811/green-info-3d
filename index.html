@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#14532d" />
   <title>GREEN INFO 3D – Pilot Đà Lạt | Trải nghiệm Nhà vòm Nông điện</title>
   <meta name="description" content="Trải nghiệm thực tế ảo 3D nhập vai mô hình nhà vòm nông điện trượt lồng Green Info tại Đà Lạt – Đội Hệ Sinh Thái Số, HUFLIT 2026." />
-  <link rel="stylesheet" href="styles.css?v=20261121s" />
+  <link rel="stylesheet" href="styles.css?v=20261122u" />
   <script type="importmap">
     {
       "imports": {
@@ -191,6 +191,13 @@
       <input id="solar-slider" type="range" min="0" max="100" value="0" />
       <span id="solar-pct" class="wp-pct">0%</span>
     </div>
+    <div class="wp-hil-row">
+      <button id="btn-wokwi-link" class="hil-btn" title="Kết nối trực tiếp mạch ESP32 ảo trên Wokwi (greeninfo/v2/pilot01)">
+        <svg class="ui-ico-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>
+        <span>Link Phần cứng Wokwi (pilot01)</span>
+      </button>
+      <span id="wokwi-status" class="hil-status">Offline (Mô phỏng Web)</span>
+    </div>
   </div>
 
   <!-- First-Person Walk Controls & Mobile Virtual Joystick -->
@@ -347,6 +354,6 @@
     </button>
   </div>
 
-  <script type="module" src="./app.js?v=20261121s"></script>
+  <script type="module" src="./app.js?v=20261122u"></script>
 </body>
 </html>

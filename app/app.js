@@ -1,3 +1,5 @@
+import { MqttLiteClient } from "../mqtt_lite.js";
+
 // =============================================================================
 // GREEN INFO MOBILE APP SIMULATOR – PILOT ĐÀ LẠT (6m x 12m, 84 GỐC DƯA LƯỚI)
 // Đồng bộ thông số 1:1 với Mô hình Web 3D & Hồ sơ Vòng 2 HUFLIT 2026
@@ -219,6 +221,9 @@ const state = {
   cropFilter: "all",
   selectedPlantId: "A04",
   activeTab: "overview",
+  hilConnected: false,
+  hilRoom: new URLSearchParams(window.location.search).get("hil") || "pilot01",
+  hilLive: null,
   plants: [],
   chatMessages: [
     {
@@ -280,7 +285,31 @@ function generatePlants(stageKey) {
 // COMPUTED LIVE DIAGNOSTICS & AI RECOMMENDER
 // =============================================================================
 function getLiveClimate() {
-  const w = WEATHER_DATA[state.weatherKey];
+  const baseW = WEATHER_DATA[state.weatherKey];
+  if (state.hilLive) {
+    const h = state.hilLive;
+    const d = state.solarDeploy / 100;
+    const parPct = Math.round(Number(h.par_pct ?? 70));
+    const parUmol = Math.round(parPct * 10.96);
+    const tempDome = Number(Number(h.temp_c ?? 28).toFixed(1));
+    const windKmh = Math.round(Number(h.wind_kmh ?? 8));
+    const pvScale = h.rain || h.failsafe ? 0.35 : 1.0;
+    const pvKw = Number(((0.6 + 2.4 * d) * pvScale).toFixed(1));
+    const w = {
+      ...baseW,
+      tempOut: Number((tempDome + (d >= 0.5 ? 5.2 : 0.4)).toFixed(1)),
+      tempDome,
+      parPct,
+      parUmol,
+      windKmh,
+      windGust: Math.round(windKmh * 1.25),
+      rainMmHr: h.rain ? 16.4 : 0.0,
+      badge: `WOKWI LIVE: ${h.mode || "AUTO"}`,
+      islandStatus: `Wokwi LIVE • Gió ${windKmh}`,
+    };
+    return { w, d, parPct, parUmol, tempDome, pvKw };
+  }
+  const w = baseW;
   const d = state.solarDeploy / 100;
   const parFactor = 1.0 - 0.38 * d;
   const basePar = w.key === "rainstorm" ? 58 : w.key === "typhoon" ? 46 : 100;
@@ -564,7 +593,7 @@ let lastFrame = performance.now();
 function tickSvgAnimations(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
-  const wind = WEATHER_DATA[state.weatherKey].windKmh;
+  const wind = state.hilLive ? Number(state.hilLive.wind_kmh ?? 8) : WEATHER_DATA[state.weatherKey].windKmh;
   anemoAngle = (anemoAngle + wind * 8 * dt) % 360;
   const rotor = document.getElementById("svg-anemo-rotor");
   if (rotor) {
@@ -805,7 +834,9 @@ function switchTab(tabId) {
 
 document.querySelectorAll("[data-sim-weather]").forEach((btn) => {
   btn.addEventListener("click", () => {
+    state.hilLive = null;
     setWeatherMode(btn.dataset.simWeather);
+    sendAppCmd({ pv_pct: state.solarDeploy, mode: btn.dataset.simWeather });
     showToast(`Đã chuyển bối cảnh: ${WEATHER_DATA[btn.dataset.simWeather].title}`);
   });
 });
@@ -843,8 +874,80 @@ document.getElementById("app-solar-slider").addEventListener("input", (e) => {
     return;
   }
   state.solarDeploy = val;
+  sendAppCmd({ pv_pct: val });
   renderAll();
 });
+
+// Wokwi Live Hardware Bridge
+let appMqtt = null;
+function sendAppCmd(obj) {
+  if (state.hilConnected && appMqtt && appMqtt.connected) {
+    appMqtt.publish(`greeninfo/v2/${state.hilRoom}/cmd`, JSON.stringify(obj));
+  }
+}
+function updateHilButtons() {
+  const txt = state.hilConnected ? (state.hilLive ? "Wokwi LIVE" : "Chờ Wokwi...") : "Link Wokwi";
+  for (const id of ["btn-sb-wokwi", "btn-app-wokwi"]) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.classList.toggle("active", state.hilConnected);
+    const sp = el.querySelector("span");
+    if (sp) sp.textContent = txt;
+    else el.textContent = txt;
+  }
+}
+function toggleAppWokwi(forceOn = null) {
+  const next = forceOn !== null ? forceOn : !state.hilConnected;
+  if (!next) {
+    state.hilConnected = false;
+    state.hilLive = null;
+    if (appMqtt) appMqtt.disconnect();
+    appMqtt = null;
+    updateHilButtons();
+    renderAll();
+    showToast("Đã ngắt liên kết phần cứng Wokwi");
+    return;
+  }
+  state.hilConnected = true;
+  updateHilButtons();
+  showToast(`Đang kết nối EMQX WSS (phòng ${state.hilRoom})...`);
+  appMqtt = new MqttLiteClient({
+    onStatus: (st) => {
+      if (!state.hilConnected) return;
+      if (st === "connected") {
+        appMqtt.subscribe(`greeninfo/v2/${state.hilRoom}/telemetry`);
+        showToast("Đã nối MQTT! Bấm Play trên Wokwi để đồng bộ LIVE.");
+      }
+    },
+    onMessage: (_topic, payload) => {
+      try {
+        const pkt = JSON.parse(payload);
+        state.hilLive = pkt;
+        state.solarDeploy = Math.max(0, Math.min(100, Math.round(Number(pkt.pv_pct ?? 0))));
+        if (pkt.soil_moist != null) state.moisturePct = Math.round(Number(pkt.soil_moist));
+        const wk = pkt.failsafe || Number(pkt.wind_kmh) >= 45
+          ? "typhoon"
+          : pkt.rain
+            ? "rainstorm"
+            : Number(pkt.temp_c) >= 31
+              ? "heatwave"
+              : "morning";
+        state.weatherKey = wk;
+        document.querySelectorAll("[data-sim-weather]").forEach((b) => {
+          b.classList.toggle("active", b.dataset.simWeather === wk);
+        });
+        updateHilButtons();
+        renderAll();
+      } catch (_) {}
+    },
+  });
+  appMqtt.connect(`gi-app-${Math.random().toString(16).slice(2, 7)}`);
+}
+document.getElementById("btn-sb-wokwi").addEventListener("click", () => toggleAppWokwi());
+document.getElementById("btn-app-wokwi").addEventListener("click", () => toggleAppWokwi());
+if (new URLSearchParams(window.location.search).has("hil")) {
+  setTimeout(() => toggleAppWokwi(true), 300);
+}
 
 // Action Buttons
 document.getElementById("btn-ov-apply-ai").addEventListener("click", () => {

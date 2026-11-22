@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Green Info Mobile App – Giám sát Nông điện & AI Dưa lưới Đà Lạt</title>
-  <link rel="stylesheet" href="styles.css?v=20261121r" />
+  <link rel="stylesheet" href="styles.css?v=20261122u" />
 </head>
 <body>
   <!-- Desktop Showcase Control Strip (hidden automatically on mobile phones) -->
@@ -38,6 +38,10 @@
         <button class="sb-pill active" data-sim-stage="harvest">Ngày 64 (Canh chín)</button>
       </div>
       <div class="sb-group">
+        <button class="sb-btn-ghost" id="btn-sb-wokwi" title="Kết nối trực tiếp mạch ESP32 trên Wokwi (greeninfo/v2/pilot01)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>
+          <span>Link Wokwi</span>
+        </button>
         <button class="sb-btn-ghost" id="btn-toggle-frame" title="Chuyển giữa Khung điện thoại & Toàn màn hình">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10 18h4"/></svg>
           <span>Toàn màn hình</span>
@@ -102,6 +106,8 @@
         <!-- Inline Quick Sim Strip inside Mobile App (always reachable on mobile phones too) -->
         <div class="mobile-sim-strip">
           <div class="mss-scroll">
+            <button class="mss-chip hil" id="btn-app-wokwi">Link Wokwi</button>
+            <span class="mss-sep"></span>
             <button class="mss-chip" data-sim-weather="morning">Sáng 19.5°</button>
             <button class="mss-chip active" data-sim-weather="heatwave">Nắng 37°</button>
             <button class="mss-chip" data-sim-weather="rainstorm">Mưa dông</button>
@@ -607,6 +613,6 @@
     </div>
   </main>
 
-  <script type="module" src="app.js?v=20261121r"></script>
+  <script type="module" src="app.js?v=20261122u"></script>
 </body>
 </html>
