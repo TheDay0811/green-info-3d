@@ -657,6 +657,27 @@ body.clean-shot #btn-mobile-menu {
 }
 .hil-status.live { color: #15803d; }
 .hil-status.warn { color: #b45309; }
+.hil-sec-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #f87171;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 5px 9px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.hil-sec-btn:hover { background: #fee2e2; }
+.hil-sec-btn.active {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(220, 38, 38, 0.35);
+}
 
 /* First-Person Walk HUD & Mobile Joystick */
 .walk-hud {

@@ -905,6 +905,8 @@ document.getElementById("app-solar-slider").addEventListener("input", (e) => {
 
 // Wokwi Live Hardware Bridge
 let appMqtt = null;
+let lastHilIntruder = false;
+let lastHilDoorLock = true;
 function sendAppCmd(obj) {
   if (state.hilConnected && appMqtt && appMqtt.connected) {
     appMqtt.publish(`greeninfo/v2/${state.hilRoom}/cmd`, JSON.stringify(obj));
@@ -961,6 +963,15 @@ function toggleAppWokwi(forceOn = null) {
         document.querySelectorAll("[data-sim-weather]").forEach((b) => {
           b.classList.toggle("active", b.dataset.simWeather === wk);
         });
+        if (typeof pkt.door_lock === "boolean" && pkt.door_lock !== lastHilDoorLock) {
+          lastHilDoorLock = pkt.door_lock;
+          state.camDoorLocked = pkt.door_lock;
+        }
+        const hwIntr = Boolean(pkt.intruder);
+        if (hwIntr !== lastHilIntruder) {
+          lastHilIntruder = hwIntr;
+          triggerIntrusionSimulation(hwIntr, false);
+        }
         updateHilButtons();
         renderAll();
       } catch (_) {}
@@ -1423,7 +1434,7 @@ function captureEvidenceSnapshot(reasonTag, msgText, isDanger = false, autoDownl
   renderCameraSecurityUI();
 }
 
-function triggerIntrusionSimulation(forceState = null) {
+function triggerIntrusionSimulation(forceState = null, publishMqtt = true) {
   const next = forceState !== null ? forceState : !state.camIntruderActive;
   state.camIntruderActive = next;
   if (next) {
@@ -1448,6 +1459,9 @@ function triggerIntrusionSimulation(forceState = null) {
       thumb: "",
     });
     showToast("Đã tắt báo động — Nhà vòm trở lại trạng thái An toàn");
+  }
+  if (publishMqtt) {
+    sendAppCmd({ intruder: state.camIntruderActive, siren: state.camSirenActive });
   }
   renderAll();
 }
@@ -1614,6 +1628,7 @@ document.getElementById("btn-igb-clear")?.addEventListener("click", () => trigge
 document.getElementById("btn-cam-siren")?.addEventListener("click", () => {
   state.camSirenActive = !state.camSirenActive;
   if (state.camSirenActive) playSirenTone(2);
+  sendAppCmd({ siren: state.camSirenActive });
   renderCameraSecurityUI();
   drawCameraFrame(performance.now());
   showToast(state.camSirenActive ? "Đang hú Còi 110dB + Nháy Đèn pha rơ-le 12V!" : "Đã tắt còi hú & đèn pha");
@@ -1621,6 +1636,7 @@ document.getElementById("btn-cam-siren")?.addEventListener("click", () => {
 
 document.getElementById("btn-cam-lock")?.addEventListener("click", () => {
   state.camDoorLocked = !state.camDoorLocked;
+  sendAppCmd({ door_lock: state.camDoorLocked });
   state.camEvents.unshift({
     time: nowTimeStr(),
     tag: "Chốt cửa",

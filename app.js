@@ -1749,6 +1749,46 @@ const camPodHead = new THREE.Group();
   domeGroup.add(camTrolleyGroup);
 }
 
+// 8D. Front Gable Door Security Pod (Cam-02 Entrance View + PIR Sensor + 12V Floodlight & Red Beacon)
+const secGateGroup = new THREE.Group();
+const secFloodMat = new THREE.MeshStandardMaterial({
+  color: 0xfef9c3,
+  emissive: 0xfde047,
+  emissiveIntensity: 0.15,
+  roughness: 0.25,
+});
+const secBeaconMat = new THREE.MeshStandardMaterial({
+  color: 0xdc2626,
+  emissive: 0xef4444,
+  emissiveIntensity: 0.12,
+  roughness: 0.3,
+});
+const secFloodLight = new THREE.PointLight(0xfffbeb, 0.0, 9.5, 1.6);
+{
+  const housingMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.15 });
+  const bracketMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.7 });
+  const glassCamMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x0284c7, emissiveIntensity: 0.3, metalness: 0.85 });
+
+  // Mount bracket above right side of front sliding door frame
+  const mount = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.055, 0.08), bracketMat);
+  const floodBar = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.052, 0.04), secFloodMat);
+  floodBar.position.set(0, 0.045, -0.02);
+  const pirDome = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 10), housingMat);
+  pirDome.position.set(-0.06, -0.035, -0.03);
+  const cam2Body = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.095, 12), housingMat);
+  cam2Body.rotation.x = Math.PI / 2 - 0.38; // tilted down looking across walkway
+  cam2Body.position.set(0.06, -0.04, -0.035);
+  const cam2Lens = new THREE.Mesh(new THREE.SphereGeometry(0.02, 10, 10), glassCamMat);
+  cam2Lens.position.set(0.06, -0.058, -0.078);
+  const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.05, 12), secBeaconMat);
+  beacon.position.set(0.11, 0.05, 0.0);
+  secFloodLight.position.set(0, -0.05, -0.18);
+
+  secGateGroup.add(mount, floodBar, pirDome, cam2Body, cam2Lens, beacon, secFloodLight);
+  secGateGroup.position.copy(toThree(0.58, 0.04, H_SIDE + 0.04));
+  domeGroup.add(secGateGroup);
+}
+
 // Flush ALL queued static tubes (frame columns, arches, purlins, gable bars, IoT stand, wind mast) into <= 4 InstancedMesh calls!
 {
   const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 8, 1);
@@ -1893,10 +1933,10 @@ const HOTSPOTS = [
     id: "hs_cam",
     num: 8,
     pos3d: toThree(0.0, 4.0, CAM_RAIL_Z - 0.24),
-    label: "Camera AI trượt hành lang (dùng chung)",
-    badge: "GIÁM SÁT SÂU BỆNH 84 GỐC • TIẾT KIỆM 95%",
-    body: "Thay vì lắp camera từng gốc gây đội vốn, Green Info chỉ dùng 1–2 Camera AI IP66 chạy trên ray trượt hành lang giữa (x = 0 m). Khi trượt dọc 12 m nhà vòm, góc nhìn kép quét đều 4 luống dưa lưới (84 cây), kết hợp cảm biến đất Enfarm & Microclimate để báo App chỉ khi cần bón phân hoặc thu hoạch.",
-    specs: ["1–2 Cam / vòm (500k–1tr đ)", "Ray trượt hành lang 12 m", "Quét đủ 4 luống • 84 gốc"],
+    label: "Camera AI trượt & Chống trộm ban đêm",
+    badge: "KÉP 2 TRONG 1: CANH DƯA + AN NINH VƯỜN",
+    body: "Chỉ lắp 1–2 Camera AI IP66 (~500k–1tr/vòm): Ban ngày trượt hành lang giữa (x = 0 m) quét sâu bệnh & độ chín 84 gốc dưa; Ban đêm chuyển Hồng ngoại IR + cảm biến PIR (GPIO 33) canh cửa lùa & rào 32 Mesh. Phát hiện người lạ tự bật đèn pha, hú còi 110dB, khóa chốt cửa và gửi ảnh về Web Điện thoại dưới 2 giây.",
+    specs: ["1–2 Cam dùng chung (0,5–1tr)", "Ngày: Soi 84 gốc dưa", "Đêm: IR + PIR + Còi chống trộm"],
   },
 ];
 
@@ -2192,6 +2232,8 @@ let wokwiClient = null;
 let wokwiActive = false;
 let liveWindKmh = null;
 let liveWindGustAmp = null;
+let secIntruderActive = false;
+let lastHwIntruder = false;
 
 function setWokwiStatusUI(txt, cls = "") {
   const st = document.getElementById("wokwi-status");
@@ -2210,7 +2252,12 @@ function applyHardwarePacket(pkt) {
   const isRain = Boolean(pkt.rain);
   const pvPct = Math.max(0, Math.min(100, Number(pkt.pv_pct ?? 0)));
   const isFailsafe = Boolean(pkt.failsafe);
+  const isHwIntruder = Boolean(pkt.intruder);
   const modeStr = String(pkt.mode || "LIVE WOKWI");
+  if (isHwIntruder !== lastHwIntruder) {
+    lastHwIntruder = isHwIntruder;
+    set3dIntruderUI(isHwIntruder, false);
+  }
 
   targetDeploy = pvPct / 100.0;
   liveWindKmh = wind;
@@ -2237,8 +2284,9 @@ function applyHardwarePacket(pkt) {
 
   const pvScale = isRain || isFailsafe ? 0.35 : 1.0;
   const pvKw = Number(((0.6 + 2.4 * targetDeploy) * pvScale).toFixed(1));
-  const modeCls = isFailsafe ? "tele-danger" : pvPct >= 50 ? "tele-warn" : "tele-ok";
-  updateTelemetry(temp, par, wind, pvKw, `WOKWI: ${modeStr}`, modeCls);
+  const modeCls = secIntruderActive || isFailsafe ? "tele-danger" : pvPct >= 50 ? "tele-warn" : "tele-ok";
+  const dispMode = secIntruderActive ? "BÁO ĐỘNG TRỘM (PIR)!" : `WOKWI: ${modeStr}`;
+  updateTelemetry(temp, par, wind, pvKw, dispMode, modeCls);
 
   document.getElementById("solar-slider").value = Math.round(pvPct);
   document.getElementById("solar-pct").textContent = `${Math.round(pvPct)}%`;
@@ -2286,6 +2334,30 @@ function toggleWokwiLink(forceOn = null) {
 }
 
 document.getElementById("btn-wokwi-link").addEventListener("click", () => toggleWokwiLink());
+
+function set3dIntruderUI(active, publishMqtt = true) {
+  secIntruderActive = Boolean(active);
+  const btn = document.getElementById("btn-3d-intruder");
+  if (btn) {
+    btn.classList.toggle("active", secIntruderActive);
+    const sp = btn.querySelector("span");
+    if (sp) sp.textContent = secIntruderActive ? "BÁO ĐỘNG ĐỎ! (Tắt)" : "Test An ninh / Trộm";
+  }
+  const mEl = document.getElementById("tele-mode");
+  if (secIntruderActive && mEl) {
+    mEl.textContent = "BÁO ĐỘNG TRỘM: CÒI + ĐÈN!";
+    mEl.className = "tele-val tele-danger";
+  } else if (!secIntruderActive && !wokwiActive) {
+    setWeatherPreset(currentWeather);
+  }
+  if (publishMqtt) {
+    sendWokwiCmd({ intruder: secIntruderActive, siren: secIntruderActive });
+  }
+}
+
+document.getElementById("btn-3d-intruder")?.addEventListener("click", () => {
+  set3dIntruderUI(!secIntruderActive, true);
+});
 
 document.getElementById("solar-slider").addEventListener("input", (e) => {
   const val = Number(e.target.value);
@@ -2643,9 +2715,20 @@ function animate(now) {
   windVane.rotation.y = -0.35 + Math.sin(now * 0.002) * (currentWeather === "typhoon" || (liveWindKmh && liveWindKmh >= 45) ? 0.38 : 0.12);
 
   // Glide shared corridor AI camera trolley smoothly back & forth along central 12 m rail
-  const camY = 5.2 + 3.8 * Math.sin(now * 0.00028 - 0.35);
-  camTrolleyGroup.position.z = 6.0 - camY;
-  camPodHead.rotation.y = Math.sin(now * 0.0011) * 0.32;
+  // When intrusion alarm active, lock camera trolley toward entrance & pulse gate floodlight/beacon
+  const camY = secIntruderActive ? 1.65 : (5.2 + 3.8 * Math.sin(now * 0.00028 - 0.35));
+  camTrolleyGroup.position.z += ((6.0 - camY) - camTrolleyGroup.position.z) * Math.min(1, dt * 4.5);
+  camPodHead.rotation.y = secIntruderActive ? Math.sin(now * 0.006) * 0.18 : Math.sin(now * 0.0011) * 0.32;
+  if (secIntruderActive) {
+    const strobe = (Math.floor(now * 0.008) % 2) === 0;
+    secFloodMat.emissiveIntensity = strobe ? 3.5 : 0.6;
+    secBeaconMat.emissiveIntensity = strobe ? 0.5 : 4.2;
+    secFloodLight.intensity = strobe ? 5.5 : 1.2;
+  } else {
+    secFloodMat.emissiveIntensity = 0.15;
+    secBeaconMat.emissiveIntensity = 0.12;
+    secFloodLight.intensity = 0.0;
+  }
   const hsCam = HOTSPOTS[7];
   if (hsCam) hsCam.pos3d.set(0.0, CAM_RAIL_Z - 0.24, camTrolleyGroup.position.z);
   const targetAmp = liveWindGustAmp !== null
