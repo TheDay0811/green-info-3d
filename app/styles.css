@@ -1425,17 +1425,18 @@ body.full-view .phone-screen {
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 .intruder-global-banner.hidden { display: none; }
-.igb-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.igb-left { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; overflow: hidden; }
 .igb-pulse {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #fef08a;
   flex-shrink: 0;
   animation: camPulse 0.8s infinite;
 }
-.igb-title { font-size: 10.5px; font-weight: 800; letter-spacing: 0.2px; }
-.igb-sub { font-size: 9.5px; color: #fee2e2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.igb-left > div { min-width: 0; flex: 1; }
+.igb-title { font-size: 10px; font-weight: 800; letter-spacing: 0.15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.igb-sub { font-size: 9px; color: #fee2e2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .igb-actions { display: flex; gap: 5px; flex-shrink: 0; }
 .igb-btn-view, .igb-btn-mute {
   appearance: none;
