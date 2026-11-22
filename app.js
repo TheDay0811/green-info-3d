@@ -151,7 +151,7 @@ const wrap = document.getElementById("canvas-wrap");
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0xe0f2fe, 0.0085);
 
-const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 380);
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.35, 340);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -242,7 +242,14 @@ function terrainHeight(x, z) {
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const z = pos.getZ(i);
-    const y = terrainHeight(x, z);
+    let y = terrainHeight(x, z);
+    // Sink terrain strictly inside concrete foundation pad footprint & outer skirt behind trees so 16-bit depth buffers never Z-fight
+    if (Math.abs(x) < 3.45 && Math.abs(z) < 6.55) {
+      y = -0.28;
+    } else {
+      const r = Math.hypot(x, z);
+      if (r > 88.0) y -= smoothstep(88.0, 110.0, r) * 34.0;
+    }
     pos.setY(i, y);
 
     const macro = ridgedHillFbm(x * 1.45 + 17.0, z * 1.45 - 11.0);
@@ -294,8 +301,13 @@ function terrainHeight(x, z) {
       const sq = 1.0 / Math.pow(Math.pow(Math.abs(Math.cos(th)), 3.2) + Math.pow(Math.abs(Math.sin(th)), 3.2), 1.0 / 3.2);
       const px = Math.cos(th) * rx * f * wobble * (0.68 + 0.32 * sq);
       const pz = Math.sin(th) * rz * f * wobble * (0.68 + 0.32 * sq);
-      // Level +0.015 inside courtyard, dipping smoothly below grass surface at rim for Z-feathered edge!
-      const py = f < 0.72 ? 0.014 : THREE.MathUtils.lerp(0.014, -0.032, smoothstep(0.72, 1.0, f));
+      // Sink terrace vertices underneath the interior of concrete pad & walkway to prevent Z-fighting on 16-bit depth buffers
+      let py = f < 0.72 ? 0.012 : THREE.MathUtils.lerp(0.012, -0.045, smoothstep(0.72, 1.0, f));
+      if (Math.abs(px) < 3.42 && Math.abs(pz) < 6.50) {
+        py = -0.25;
+      } else if (Math.abs(px) < 0.68 && pz < -6.30 && pz > -18.5) {
+        py = -0.25;
+      }
       bVerts.push(px, py, pz);
       bUvs.push((px + rx) / (2 * rx), (pz + rz) / (2 * rz));
     }
@@ -328,18 +340,34 @@ function terrainHeight(x, z) {
 
 // Poured industrial concrete dome foundation pad & entry walkway
 const padMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(7.0, 0.045, 13.2),
-  new THREE.MeshStandardMaterial({ map: texConcrete, bumpMap: texConcreteBump, bumpScale: 0.008, roughness: 0.88 })
+  new THREE.BoxGeometry(7.0, 0.16, 13.2),
+  new THREE.MeshStandardMaterial({
+    map: texConcrete,
+    bumpMap: texConcreteBump,
+    bumpScale: 0.008,
+    roughness: 0.88,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3,
+  })
 );
-padMesh.position.set(0, 0.025, 0);
+padMesh.position.set(0, -0.028, 0);
 padMesh.receiveShadow = true;
 scene.add(padMesh);
 
 const pathMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(1.5, 0.035, 12.0),
-  new THREE.MeshStandardMaterial({ map: texConcretePath, bumpMap: texConcreteBump, bumpScale: 0.007, roughness: 0.90 })
+  new THREE.BoxGeometry(1.5, 0.14, 12.0),
+  new THREE.MeshStandardMaterial({
+    map: texConcretePath,
+    bumpMap: texConcreteBump,
+    bumpScale: 0.007,
+    roughness: 0.90,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3,
+  })
 );
-pathMesh.position.set(0, 0.02, -12.5);
+pathMesh.position.set(0, -0.022, -12.6);
 pathMesh.receiveShadow = true;
 scene.add(pathMesh);
 
@@ -406,9 +434,9 @@ function createMountainBelt(rIn, rPeak, rOut, maxH, seed, lowRgb, midRgb, crestR
   return new THREE.Mesh(geo, mat);
 }
 
-scene.add(createMountainBelt(52, 68, 92, 19.5, 0.7, 0x1a3f26, 0x2f5e36, 0x4b7740));
-scene.add(createMountainBelt(86, 114, 148, 34.0, 2.3, 0x1b4332, 0x2d5a52, 0x4e7a78));
-scene.add(createMountainBelt(138, 174, 218, 56.0, 4.1, 0x294861, 0x456982, 0x7aa0bd));
+scene.add(createMountainBelt(86, 108, 136, 28.0, 0.7, 0x1a3f26, 0x2f5e36, 0x4b7740));
+scene.add(createMountainBelt(126, 156, 194, 44.0, 2.3, 0x1b4332, 0x2d5a52, 0x4e7a78));
+scene.add(createMountainBelt(180, 214, 250, 66.0, 4.1, 0x294861, 0x456982, 0x7aa0bd));
 
 // Translucent Da Lat morning valley mist floating in the pine saddle
 const valleyMistTex = (() => {
@@ -431,7 +459,7 @@ const valleyMistMat = new THREE.MeshBasicMaterial({
   depthWrite: false,
   side: THREE.DoubleSide,
 });
-const mistRing = new THREE.Mesh(new THREE.CylinderGeometry(86, 72, 13.0, 64, 1, true), valleyMistMat);
+const mistRing = new THREE.Mesh(new THREE.CylinderGeometry(118, 102, 15.0, 64, 1, true), valleyMistMat);
 mistRing.position.y = 7.2;
 scene.add(mistRing);
 
@@ -1181,12 +1209,7 @@ const bedMat = new THREE.MeshStandardMaterial({
   roughness: 0.80,
   metalness: 0.04,
 });
-for (const [xs, xe] of [[-2.45, -0.75], [0.75, 2.45]]) {
-  const bed = new THREE.Mesh(new THREE.BoxGeometry(xe - xs, 0.02, 10.4), bedMat);
-  bed.position.copy(toThree((xs + xe) / 2, 6.0, 0.012));
-  bed.receiveShadow = true;
-  domeGroup.add(bed);
-}
+// Clean poured interior concrete slab without buried duplicate bed plane (prevents floor Z-fighting)
 
 const rowXCoords = [-2.1, -1.1, 1.1, 2.1];
 const pipeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.35, metalness: 0.05 });
@@ -1651,6 +1674,81 @@ function makeEnfarmFaceTex() {
   addEnfarmSoilStation(1, 7.92);
 }
 
+// =============================================================================
+// 8C. SHARED CORRIDOR SLIDING AI CAMERA RAIL & PATROLLING STEREO POD (1-2 CAM / DOME)
+// =============================================================================
+const CAM_RAIL_Z = H_SIDE + 0.46;
+const camApexZ = Z_CENTER + R_ARCH;
+// Overhead anodized track rail down the center aisle (x = 0.0 m) + upper stabilizer cable carrier
+addTubeBetween(toThree(0.0, 0.20, CAM_RAIL_Z), toThree(0.0, L - 0.20, CAM_RAIL_Z), 0.016, clampMat, domeGroup);
+addTubeBetween(toThree(0.055, 0.20, CAM_RAIL_Z + 0.055), toThree(0.055, L - 0.20, CAM_RAIL_Z + 0.055), 0.008, steelMat, domeGroup);
+for (let i = 0; i <= bays; i++) {
+  const byRail = (i * L) / bays;
+  addTubeBetween(toThree(0.0, byRail, camApexZ), toThree(0.0, byRail, CAM_RAIL_Z), 0.010, steelMat, domeGroup);
+}
+for (const byEnd of [0.22, L - 0.22]) {
+  addTubeBetween(toThree(-0.60, byEnd, CAM_RAIL_Z), toThree(0.60, byEnd, CAM_RAIL_Z), 0.010, steelMat, domeGroup);
+}
+
+const camTrolleyGroup = new THREE.Group();
+const camPodHead = new THREE.Group();
+{
+  const camMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.72, roughness: 0.28 });
+  const camWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.15, roughness: 0.35 });
+  const camBlackMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.35, roughness: 0.42 });
+  const camLensMat = new THREE.MeshStandardMaterial({
+    color: 0x042f2e,
+    emissive: 0x0d9488,
+    emissiveIntensity: 0.35,
+    metalness: 0.90,
+    roughness: 0.12,
+  });
+  const camLedMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+
+  const carriage = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.085, 0.24), camMetalMat);
+  carriage.castShadow = !isMobileDevice;
+  camTrolleyGroup.add(carriage);
+  for (const zOff of [-0.08, 0.08]) {
+    const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.125, 12), steelMat);
+    roller.rotation.z = Math.PI / 2;
+    roller.position.set(0, 0.022, zOff);
+    camTrolleyGroup.add(roller);
+  }
+  const gimbalStem = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.15, 10), camMetalMat);
+  gimbalStem.position.set(0, -0.095, 0);
+  camTrolleyGroup.add(gimbalStem);
+
+  camPodHead.position.set(0, -0.18, 0);
+  const podHousing = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.095, 0.14), camWhiteMat);
+  podHousing.castShadow = !isMobileDevice;
+  const podCap = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.02, 0.16), camMetalMat);
+  podCap.position.y = 0.052;
+  camPodHead.add(podHousing, podCap);
+
+  // Dual outward-angled stereo AI lenses looking down left (-X) & right (+X) melon canopies
+  for (const sx of [-1, 1]) {
+    const eyePivot = new THREE.Group();
+    eyePivot.position.set(sx * 0.095, -0.02, 0);
+    eyePivot.rotation.z = -sx * 0.58; // pitch downward ~33 deg toward row canopy
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.032, 0.068, 16), camBlackMat);
+    barrel.rotation.z = -sx * (Math.PI / 2);
+    const glass = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 10), camLensMat);
+    glass.position.x = sx * 0.032;
+    eyePivot.add(barrel, glass);
+    camPodHead.add(eyePivot);
+  }
+  const aiLed = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), camLedMat);
+  aiLed.position.set(0, 0.01, -0.074);
+  const aiBotDome = new THREE.Mesh(new THREE.SphereGeometry(0.036, 12, 10, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), camBlackMat);
+  aiBotDome.position.set(0, -0.045, 0);
+  const aiAnt = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.006, 0.14, 8), camBlackMat);
+  aiAnt.position.set(-0.08, 0.11, 0.04);
+  camPodHead.add(aiLed, aiBotDome, aiAnt);
+  camTrolleyGroup.add(camPodHead);
+  camTrolleyGroup.position.copy(toThree(0.0, 4.0, CAM_RAIL_Z));
+  domeGroup.add(camTrolleyGroup);
+}
+
 // Flush ALL queued static tubes (frame columns, arches, purlins, gable bars, IoT stand, wind mast) into <= 4 InstancedMesh calls!
 {
   const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 8, 1);
@@ -1790,6 +1888,15 @@ const HOTSPOTS = [
     badge: "THU NƯỚC MƯA CHUẨN TRỌNG LỰC",
     body: "Màng nhựa PE mái vòm đảm nhiệm che mưa 100% (trời mưa pin thu gọn vách không cần đưa lên), dừng tại x = ±2,84 m rủ mép trực tiếp vào lòng máng xối hở trên (x = ±2,84–3,00 m) về bồn chứa mà vẫn tách biệt hoàn toàn khỏi ray trượt ngoài cột (6–13,5 cm).",
     specs: ["Mái PE che mưa 100%", "Máng hở trên ±2,84–3,00 m", "0% va chạm ray trượt pin"],
+  },
+  {
+    id: "hs_cam",
+    num: 8,
+    pos3d: toThree(0.0, 4.0, CAM_RAIL_Z - 0.24),
+    label: "Camera AI trượt hành lang (dùng chung)",
+    badge: "GIÁM SÁT SÂU BỆNH 84 GỐC • TIẾT KIỆM 95%",
+    body: "Thay vì lắp camera từng gốc gây đội vốn, Green Info chỉ dùng 1–2 Camera AI IP66 chạy trên ray trượt hành lang giữa (x = 0 m). Khi trượt dọc 12 m nhà vòm, góc nhìn kép quét đều 4 luống dưa lưới (84 cây), kết hợp cảm biến đất Enfarm & Microclimate để báo App chỉ khi cần bón phân hoặc thu hoạch.",
+    specs: ["1–2 Cam / vòm (500k–1tr đ)", "Ray trượt hành lang 12 m", "Quét đủ 4 luống • 84 gốc"],
   },
 ];
 
@@ -2534,6 +2641,13 @@ function animate(now) {
     : currentWeather === "typhoon" ? 18.0 : currentWeather === "rainstorm" ? 8.0 : 2.5;
   anemoRotor.rotation.y += windSpeed * dt;
   windVane.rotation.y = -0.35 + Math.sin(now * 0.002) * (currentWeather === "typhoon" || (liveWindKmh && liveWindKmh >= 45) ? 0.38 : 0.12);
+
+  // Glide shared corridor AI camera trolley smoothly back & forth along central 12 m rail
+  const camY = 5.2 + 3.8 * Math.sin(now * 0.00028 - 0.35);
+  camTrolleyGroup.position.z = 6.0 - camY;
+  camPodHead.rotation.y = Math.sin(now * 0.0011) * 0.32;
+  const hsCam = HOTSPOTS[7];
+  if (hsCam) hsCam.pos3d.set(0.0, CAM_RAIL_Z - 0.24, camTrolleyGroup.position.z);
   const targetAmp = liveWindGustAmp !== null
     ? liveWindGustAmp
     : currentWeather === "typhoon" ? 0.14 : currentWeather === "rainstorm" ? 0.065 : 0.022;
