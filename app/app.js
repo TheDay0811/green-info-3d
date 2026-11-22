@@ -225,6 +225,19 @@ const state = {
   hilRoom: new URLSearchParams(window.location.search).get("hil") || "pilot01",
   hilLive: null,
   plants: [],
+  camActiveId: "cam1",
+  camNightMode: false,
+  camGuardArmed: true,
+  camAutoPatrol: true,
+  camRailM: 4.2,
+  camIntruderActive: false,
+  camSirenActive: false,
+  camDoorLocked: true,
+  camEvents: [
+    { time: "Vừa xong", tag: "Nông nghiệp", danger: false, msg: "Cam 01 trượt quét 4 luống: 22 gốc chín sẵn sàng hái hôm nay.", thumb: "" },
+    { time: "06:15", tag: "An ninh", danger: false, msg: "Chuyển ca ngày: cửa lùa đang KHÓA chốt từ xa, lưới 32 Mesh nguyên vẹn.", thumb: "" },
+    { time: "02:40", tag: "Canh đêm", danger: false, msg: "IR Đêm: gió rung lá 18 km/h — AI Human Filter loại trừ báo động giả.", thumb: "" },
+  ],
   chatMessages: [
     {
       role: "bot",
@@ -610,10 +623,15 @@ function renderAll() {
   const ai = computeAiPlan();
   const { clim, stg, counts } = ai;
 
-  // Dynamic Island & Top Bar
+  // Dynamic Island & Top Bar (Intrusion Alert overrides Island badge immediately)
   const islandDot = document.getElementById("island-dot");
-  islandDot.className = `island-dot ${clim.w.islandCls}`;
-  document.getElementById("island-status").textContent = clim.w.islandStatus;
+  if (state.camIntruderActive) {
+    islandDot.className = "island-dot danger";
+    document.getElementById("island-status").textContent = "CẢNH BÁO TRỘM!";
+  } else {
+    islandDot.className = `island-dot ${clim.w.islandCls}`;
+    document.getElementById("island-status").textContent = clim.w.islandStatus;
+  }
   document.getElementById("ah-subtitle").textContent = `Pilot Đà Lạt • ${stg.day}/${stg.totalDays} ngày • 84 gốc`;
 
   // Tab 1: Overview Hero
@@ -754,6 +772,7 @@ function renderAll() {
   `;
 
   renderChatFeed();
+  renderCameraSecurityUI();
 }
 
 function renderChatFeed() {
@@ -772,8 +791,11 @@ function answerAiQuestion(qRaw) {
   const ai = computeAiPlan();
   const { clim, stg, counts } = ai;
 
+  if (q.includes("trộm") || q.includes("an ninh") || q.includes("đột nhập") || q.includes("ban đêm") || q.includes("còi") || q.includes("khóa")) {
+    return `Chính cụm <b>1–2 Camera AI dùng chung (~500k–1tr)</b> sẽ bật <b>Hồng ngoại IR + AI Nhận diện dáng người</b> vào ban đêm (hoặc khi bạn bật chế độ Vắng chủ). Nếu có người lạ mở cửa hoặc rạch lưới, hệ thống <b>bỏ qua gió rung/chim nhỏ</b>, tự bật <b>còi hú 110dB + đèn pha ắc quy 24V</b>, khóa chốt cửa và gửi ngay ảnh chụp + cảnh báo đỏ về web điện thoại trong <b>&lt; 2 giây</b>! Bạn mở tab <b>Camera</b> để xem trực tiếp hoặc bấm <b>Test Trộm</b> thử ngay.`;
+  }
   if (q.includes("camera") || q.includes("chi phí") || q.includes("nhân công") || q.includes("tự động") || q.includes("bón phân")) {
-    return `Hệ thống chỉ lắp <b>1–2 Camera dùng chung (~500 nghìn – 1 triệu VNĐ)</b> chạy dọc hành lang giữa hoặc gắn đầu luống để tự động quét hết 84 gốc kết hợp 2 trạm đất A4/C14 và tưới nhỏ giọt tự động. Nhờ vậy nông dân hầu như <b>chỉ cần ra vườn khi bón phân bổ sung hoặc cắt quả chín</b> (${counts.ripe} gốc sẵn sàng hái).`;
+    return `Hệ thống chỉ lắp <b>1–2 Camera dùng chung (~500 nghìn – 1 triệu VNĐ)</b> chạy dọc hành lang giữa và canh cửa lùa: ban ngày tự động quét 84 gốc kết hợp 2 trạm đất A4/C14, ban đêm trực chống trộm hồng ngoại gửi ảnh về điện thoại. Nhờ vậy nông dân hầu như <b>chỉ cần ra vườn khi bón phân bổ sung hoặc cắt quả chín</b> (${counts.ripe} gốc sẵn sàng hái).`;
   }
   if (q.includes("thu hoạch") || q.includes("bao lâu") || q.includes("chín") || q.includes("xanh")) {
     return `Hiện vườn 84 gốc đang ở <b>${stg.label}</b>: đã có <b>${counts.ripe} quả chín</b> (có thể cắt ngay), <b>${counts.turning} quả sắp chín</b> và <b>${counts.green} quả còn xanh</b>. Độ ngọt trung bình <b>${counts.avgBrix}° Brix</b>; đợt rộ kế tiếp thu hoạch sau khoảng <b>${counts.avgDaysLeft} ngày nữa</b>.`;
@@ -1022,6 +1044,627 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
   renderChatFeed();
 });
 
+// =============================================================================
+// LIVE CAMERA AI & ANTI-INTRUSION SECURITY MODULE (1-2 SHARED CAMERAS)
+// =============================================================================
+function nowTimeStr() {
+  return new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function playSirenTone(pulses = 2) {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    for (let i = 0; i < pulses; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sawtooth";
+      const t0 = ctx.currentTime + i * 0.28;
+      osc.frequency.setValueAtTime(780, t0);
+      osc.frequency.linearRampToValueAtTime(1180, t0 + 0.12);
+      osc.frequency.linearRampToValueAtTime(780, t0 + 0.22);
+      gain.gain.setValueAtTime(0.06, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.24);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.25);
+    }
+    setTimeout(() => {
+      try { ctx.close(); } catch (_) {}
+    }, pulses * 320 + 200);
+  } catch (_) {}
+}
+
+function getRailPairIdx(railM) {
+  const idx = Math.max(1, Math.min(21, Math.round(1 + ((railM - 1.2) / 9.6) * 20)));
+  return idx < 10 ? `0${idx}` : `${idx}`;
+}
+
+function drawCameraFrame(tMs = performance.now()) {
+  const canvas = document.getElementById("cam-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width;
+  const H = canvas.height;
+  const sec = tMs * 0.001;
+  const isNight = state.camNightMode;
+  const isAlarm = state.camIntruderActive;
+  const strobeOn = state.camSirenActive && Math.floor(sec * 5) % 2 === 0;
+
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+
+  if (state.camActiveId === "cam1") {
+    // --- CAM 01: CENTER CORRIDOR RAIL POV (LOOKING DOWN 4 MELON ROWS) ---
+    const panShift = Math.sin(sec * 0.7) * 6 + ((state.camRailM - 6.0) / 5.5) * 4;
+    const vx = W * 0.5 + panShift;
+    const vy = H * 0.44;
+
+    // Sky / PE Dome ceiling
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    if (isNight) {
+      bgGrad.addColorStop(0, "#03150e");
+      bgGrad.addColorStop(0.45, "#0a2a1d");
+      bgGrad.addColorStop(1, "#04140d");
+    } else if (state.weatherKey === "rainstorm" || state.weatherKey === "typhoon") {
+      bgGrad.addColorStop(0, "#334155");
+      bgGrad.addColorStop(0.45, "#64748b");
+      bgGrad.addColorStop(1, "#1e293b");
+    } else {
+      bgGrad.addColorStop(0, "#0284c7");
+      bgGrad.addColorStop(0.45, "#bae6fd");
+      bgGrad.addColorStop(1, "#e2e8f0");
+    }
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Solar canopy shadow band if deployed >= 50%
+    if (!isNight && state.solarDeploy >= 50) {
+      ctx.fillStyle = "rgba(15, 23, 42, 0.36)";
+      ctx.fillRect(0, 0, W, vy + 8);
+    }
+
+    // Center concrete walkway trapezoid
+    ctx.fillStyle = isNight ? "#122c20" : "#cbd5e1";
+    ctx.beginPath();
+    ctx.moveTo(W * 0.24, H);
+    ctx.lineTo(vx - 18, vy + 18);
+    ctx.lineTo(vx + 18, vy + 18);
+    ctx.lineTo(W * 0.76, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // Side weed-mat bed strips
+    ctx.fillStyle = isNight ? "#071a12" : "#1e293b";
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    ctx.lineTo(W * 0.24, H);
+    ctx.lineTo(vx - 18, vy + 18);
+    ctx.lineTo(vx - 88, vy + 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(W, H);
+    ctx.lineTo(W * 0.76, H);
+    ctx.lineTo(vx + 18, vy + 18);
+    ctx.lineTo(vx + 88, vy + 18);
+    ctx.closePath();
+    ctx.fill();
+
+    // Arch steel hoops in perspective
+    ctx.strokeStyle = isNight ? "rgba(74, 222, 128, 0.35)" : "rgba(241, 245, 249, 0.78)";
+    for (let i = 0; i < 6; i++) {
+      const k = Math.pow(0.68, i);
+      const rw = (W * 0.62) * k;
+      const rh = (H * 0.62) * k;
+      ctx.lineWidth = Math.max(1, 2.5 * k);
+      ctx.beginPath();
+      ctx.ellipse(vx, vy + 24 * k, rw, rh, 0, Math.PI, 0);
+      ctx.stroke();
+    }
+
+    // Far end door frame
+    ctx.strokeStyle = isNight ? "#22c55e" : "#475569";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(vx - 22, vy - 18, 44, 38);
+
+    // 4 Melon Rows (Coco-peat growbags + stems + melons in perspective)
+    const melonColor =
+      state.stageKey === "harvest"
+        ? isNight ? "#86efac" : "#eab308"
+        : state.stageKey === "netting"
+          ? isNight ? "#4ade80" : "#84cc16"
+          : isNight ? "#22c55e" : "#16a34a";
+
+    const railPhase = ((state.camRailM - 0.5) / 11.0);
+    for (let d = 5; d >= 0; d--) {
+      const zFrac = Math.min(0.95, (d + 0.25 + (railPhase * 0.6) % 0.4) / 6.0);
+      const scale = 1.0 - zFrac * 0.76;
+      const pyBase = vy + 18 + (H - (vy + 18)) * Math.pow(scale, 1.3);
+      for (const side of [-1, 1]) {
+        const px = vx + side * (30 + 145 * scale);
+        const potW = 24 * scale;
+        const potH = 22 * scale;
+        ctx.fillStyle = isNight ? "#14532d" : "#f8fafc";
+        ctx.fillRect(px - potW / 2, pyBase - potH, potW, potH);
+        ctx.strokeStyle = isNight ? "#22c55e" : "#15803d";
+        ctx.lineWidth = Math.max(1.5, 4 * scale);
+        ctx.beginPath();
+        ctx.moveTo(px, pyBase - potH);
+        ctx.lineTo(px, pyBase - 125 * scale);
+        ctx.stroke();
+        // Leaves
+        ctx.fillStyle = isNight ? "rgba(34, 197, 94, 0.52)" : "#15803d";
+        for (let lf = 0; lf < 3; lf++) {
+          ctx.beginPath();
+          ctx.ellipse(px + side * (-8 * scale) * (lf % 2 ? 1 : -1), pyBase - (48 + lf * 24) * scale, 12 * scale, 7 * scale, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Melon fruit
+        const mx = px - side * 8 * scale;
+        const my = pyBase - 54 * scale;
+        ctx.fillStyle = melonColor;
+        ctx.beginPath();
+        ctx.arc(mx, my, Math.max(3, 10 * scale), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight AI vision box on foreground pair (d === 1)
+        if (d === 1 && !isAlarm) {
+          const idTag = side < 0 ? `A${getRailPairIdx(state.camRailM)}` : `C${getRailPairIdx(state.camRailM)}`;
+          const labelTxt = state.stageKey === "harvest" ? `${idTag}: Chín 94%` : `${idTag}: Khỏe 100%`;
+          const bx = mx - 18;
+          const by = my - 18;
+          ctx.strokeStyle = "#4ade80";
+          ctx.lineWidth = 1.6;
+          ctx.strokeRect(bx, by, 36, 36);
+          ctx.fillStyle = "rgba(21, 128, 61, 0.85)";
+          ctx.fillRect(bx, by - 14, 72, 13);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 9px Segoe UI, sans-serif";
+          ctx.fillText(labelTxt, bx + 4, by - 4);
+        }
+      }
+    }
+
+    // Intruder silhouette inside corridor
+    if (isAlarm) {
+      const walkX = vx + Math.sin(sec * 2.2) * 14;
+      const figH = 122;
+      const figY = H - 22;
+      drawIntruderBox(ctx, walkX, figY, figH, sec, strobeOn);
+    }
+  } else {
+    // --- CAM 02: FRONT ENTRANCE SLIDING DOOR & EXTERIOR PERIMETER ---
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    if (isNight) {
+      bgGrad.addColorStop(0, "#02130b");
+      bgGrad.addColorStop(0.55, "#062316");
+      bgGrad.addColorStop(1, "#0b2e1d");
+    } else {
+      bgGrad.addColorStop(0, "#0284c7");
+      bgGrad.addColorStop(0.52, "#bae6fd");
+      bgGrad.addColorStop(1, "#3f6212");
+    }
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Distant pine hill silhouette
+    ctx.fillStyle = isNight ? "#041c11" : "#14532d";
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.56);
+    ctx.quadraticCurveTo(W * 0.25, H * 0.38, W * 0.55, H * 0.50);
+    ctx.quadraticCurveTo(W * 0.8, H * 0.35, W, H * 0.52);
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // Exterior concrete walkway
+    ctx.fillStyle = isNight ? "#153224" : "#cbd5e1";
+    ctx.beginPath();
+    ctx.moveTo(W * 0.30, H);
+    ctx.lineTo(W * 0.42, H * 0.62);
+    ctx.lineTo(W * 0.58, H * 0.62);
+    ctx.lineTo(W * 0.70, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // Greenhouse Front Gable + Sliding Door
+    ctx.fillStyle = isNight ? "rgba(16, 185, 129, 0.14)" : "rgba(224, 242, 254, 0.45)";
+    ctx.strokeStyle = isNight ? "#22c55e" : "#94a3b8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(W * 0.20, H * 0.66);
+    ctx.lineTo(W * 0.20, H * 0.42);
+    ctx.quadraticCurveTo(W * 0.50, H * 0.14, W * 0.80, H * 0.42);
+    ctx.lineTo(W * 0.80, H * 0.66);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Center Sliding Door + Signboard
+    ctx.strokeStyle = isNight ? "#4ade80" : "#1e293b";
+    ctx.strokeRect(W * 0.43, H * 0.38, W * 0.14, H * 0.28);
+    // Lock LED on door frame
+    ctx.fillStyle = state.camDoorLocked ? "#22c55e" : "#f59e0b";
+    ctx.beginPath();
+    ctx.arc(W * 0.555, H * 0.52, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // GREEN INFO board right of door
+    ctx.fillStyle = isNight ? "#064e3b" : "#14532d";
+    ctx.fillRect(W * 0.60, H * 0.50, 74, 28);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 8px Segoe UI, sans-serif";
+    ctx.fillText("GREEN INFO", W * 0.614, H * 0.55);
+
+    // Blue PE Tank on left
+    ctx.fillStyle = isNight ? "#0c4a6e" : "#0284c7";
+    ctx.fillRect(W * 0.08, H * 0.48, 36, 48);
+
+    // Intruder near front sliding door!
+    if (isAlarm) {
+      const ix = W * 0.48 + Math.sin(sec * 2.5) * 24;
+      drawIntruderBox(ctx, ix, H * 0.84, 96, sec, strobeOn);
+    }
+  }
+
+  // Flashlight / Floodlight Strobe Overlay when siren/lights ON
+  if (strobeOn) {
+    ctx.fillStyle = Math.floor(sec * 10) % 2 === 0 ? "rgba(239, 68, 68, 0.18)" : "rgba(255, 255, 255, 0.18)";
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Night vision subtle vignette & scanlines
+  if (isNight) {
+    ctx.fillStyle = "rgba(34, 197, 94, 0.06)";
+    for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
+  }
+
+  // CCTV Top HUD Overlay
+  ctx.fillStyle = "rgba(2, 6, 23, 0.68)";
+  ctx.fillRect(0, 0, W, 28);
+  // Flashing REC dot
+  if (Math.floor(sec * 2) % 2 === 0) {
+    ctx.fillStyle = "#ef4444";
+    ctx.beginPath();
+    ctx.arc(14, 14, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 10.5px Segoe UI, sans-serif";
+  const camTitle =
+    state.camActiveId === "cam1"
+      ? `LIVE CAM-01 • RAY ${state.camRailM.toFixed(1)}m / 12m`
+      : "LIVE CAM-02 • CỬA LÙA & RÀO NGOÀI";
+  ctx.fillText(camTitle, 24, 18);
+
+  const hudRight = `${isNight ? "IR ĐÊM" : "NGÀY HD"} • ${nowTimeStr()}`;
+  ctx.textAlign = "right";
+  ctx.fillStyle = isAlarm ? "#fca5a5" : "#86efac";
+  ctx.fillText(hudRight, W - 10, 18);
+  ctx.textAlign = "left";
+
+  // Red Border Flash on Intrusion
+  if (isAlarm) {
+    ctx.strokeStyle = strobeOn ? "#ffffff" : "#ef4444";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, W - 4, H - 4);
+  }
+
+  ctx.restore();
+}
+
+function drawIntruderBox(ctx, cx, footY, h, sec, strobeOn) {
+  const headY = footY - h;
+  const w = h * 0.42;
+  // Silhouette body + hood + flashlight/bag
+  ctx.fillStyle = "#090d16";
+  ctx.beginPath();
+  ctx.arc(cx, headY + 13, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(cx - w * 0.42, headY + 24, w * 0.84, h * 0.45);
+  // Legs stride
+  const stride = Math.sin(sec * 6) * 8;
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = "#090d16";
+  ctx.beginPath();
+  ctx.moveTo(cx - 7, footY - 34);
+  ctx.lineTo(cx - 10 + stride, footY);
+  ctx.moveTo(cx + 7, footY - 34);
+  ctx.lineTo(cx + 10 - stride, footY);
+  ctx.stroke();
+
+  // Pulsing Red AI Bounding Box
+  const bx = cx - w * 0.62;
+  const by = headY - 4;
+  const bw = w * 1.24;
+  const bh = h + 10;
+  ctx.strokeStyle = strobeOn ? "#fef08a" : "#ef4444";
+  ctx.lineWidth = 2.4;
+  ctx.strokeRect(bx, by, bw, bh);
+
+  // Corner brackets + Alert label tag
+  ctx.fillStyle = "#dc2626";
+  const lblW = 148;
+  const lx = Math.max(6, Math.min(480 - lblW - 6, bx));
+  ctx.fillRect(lx, Math.max(30, by - 19), lblW, 17);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 9.5px Segoe UI, sans-serif";
+  ctx.fillText("CẢNH BÁO NGƯỜI LẠ • AI 98%", lx + 5, Math.max(42, by - 7));
+}
+
+function captureEvidenceSnapshot(reasonTag, msgText, isDanger = false, autoDownload = false) {
+  drawCameraFrame(performance.now());
+  const canvas = document.getElementById("cam-canvas");
+  let dataUrl = "";
+  try {
+    dataUrl = canvas ? canvas.toDataURL("image/png") : "";
+  } catch (_) {}
+  state.camEvents.unshift({
+    time: nowTimeStr(),
+    tag: reasonTag,
+    danger: isDanger,
+    msg: msgText,
+    thumb: dataUrl,
+  });
+  if (state.camEvents.length > 10) state.camEvents.length = 10;
+
+  if (autoDownload && dataUrl) {
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `GreenInfo_Cam_${state.camActiveId}_${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  renderCameraSecurityUI();
+}
+
+function triggerIntrusionSimulation(forceState = null) {
+  const next = forceState !== null ? forceState : !state.camIntruderActive;
+  state.camIntruderActive = next;
+  if (next) {
+    state.camGuardArmed = true;
+    state.camNightMode = true;
+    state.camSirenActive = true;
+    playSirenTone(2);
+    captureEvidenceSnapshot(
+      "BÁO ĐỘNG ĐỎ",
+      `Phát hiện người lạ tại ${state.camActiveId === "cam1" ? "Lối đi giữa (gần Cửa lùa)" : "Cửa lùa & Rào 32 Mesh"}! Đã bật Còi 110dB + Đèn pha.`,
+      true,
+      false
+    );
+    showToast("CẢNH BÁO! Camera AI phát hiện người lạ xâm nhập!");
+  } else {
+    state.camSirenActive = false;
+    state.camEvents.unshift({
+      time: nowTimeStr(),
+      tag: "Đã xác nhận",
+      danger: false,
+      msg: "Chủ vườn đã kiểm tra & tắt còi báo động. Tiếp tục canh gác AI.",
+      thumb: "",
+    });
+    showToast("Đã tắt báo động — Nhà vòm trở lại trạng thái An toàn");
+  }
+  renderAll();
+}
+
+function renderCameraSecurityUI() {
+  const alarm = state.camIntruderActive;
+
+  // Global Push Banner + Tab Dot + Sim Buttons
+  const igb = document.getElementById("intruder-global-banner");
+  if (igb) igb.classList.toggle("hidden", !alarm);
+  const tabDot = document.getElementById("tab-cam-dot");
+  if (tabDot) tabDot.classList.toggle("alarm", alarm);
+
+  for (const id of ["btn-sb-intruder", "btn-app-intruder"]) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("active", alarm);
+  }
+
+  // Tab 1 Overview Glance Card
+  const glance = document.getElementById("ov-cam-glance");
+  if (glance) {
+    glance.classList.toggle("alarm", alarm);
+    document.getElementById("ov-cam-title").textContent = alarm
+      ? "BÁO ĐỘNG ĐỎ: Phát hiện người lạ tại vòm!"
+      : `Camera AI & Chống trộm: ${state.camGuardArmed ? "Đang trực 24/7" : "Chỉ xem trực tiếp"}`;
+    document.getElementById("ov-cam-sub").textContent = alarm
+      ? "Còi 110dB + Đèn pha đang hú • Bấm Xem Cam kiểm tra ngay!"
+      : `2 Cam dùng chung (Hành lang 12 m + Cửa lùa) • Cửa ${state.camDoorLocked ? "đã khóa" : "đang mở"}`;
+  }
+
+  // Tab 5 Status Card & Viewport
+  const stCard = document.getElementById("cam-status-card");
+  if (stCard) {
+    stCard.classList.toggle("alarm", alarm);
+    document.getElementById("cam-guard-pill").textContent = alarm
+      ? "KHẨN CẤP: PHÁT HIỆN NGƯỜI LẠ 98%"
+      : state.camGuardArmed
+        ? "AN NINH: AI CANH GÁC BẬT"
+        : "CHẾ ĐỘ CHỈ XEM LIVE";
+    document.getElementById("cam-status-title").textContent = alarm
+      ? "BÁO ĐỘNG XÂM NHẬP BAN ĐÊM!"
+      : "Camera AI Trực tiếp & Chống trộm";
+    document.getElementById("cam-status-desc").textContent = alarm
+      ? "AI nhận diện dáng người đang tiến vào khu vực cửa lùa / lối đi. Còi 110dB & Đèn pha đã kích hoạt tự động!"
+      : "Ban ngày quét 84 gốc dưa • Ban đêm chuyển AI nhận diện người lạ + còi hú 110dB + báo điện thoại < 2s.";
+    document.getElementById("cam-lock-tag").textContent = state.camDoorLocked ? "CỬA KHÓA" : "ĐANG MỞ";
+  }
+
+  const vp = document.getElementById("cam-viewport");
+  if (vp) vp.classList.toggle("alarm", alarm);
+
+  document.querySelectorAll("[data-cam-src]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.camSrc === state.camActiveId);
+  });
+
+  // Control toggles & Slider
+  const btnIr = document.getElementById("btn-cam-ir");
+  if (btnIr) btnIr.classList.toggle("active", state.camNightMode);
+  const btnGuard = document.getElementById("btn-cam-guard");
+  if (btnGuard) {
+    btnGuard.classList.toggle("active", state.camGuardArmed);
+    btnGuard.querySelector("span").textContent = state.camGuardArmed ? "AI Canh trộm: BẬT" : "AI Canh trộm: TẮT";
+  }
+  const btnPatrol = document.getElementById("btn-cam-patrol");
+  if (btnPatrol) btnPatrol.classList.toggle("active", state.camAutoPatrol);
+
+  const railWrap = document.getElementById("cam-rail-control-wrap");
+  if (railWrap) railWrap.classList.toggle("disabled", state.camActiveId !== "cam1");
+  const railSlider = document.getElementById("cam-rail-slider");
+  if (railSlider) railSlider.value = state.camRailM.toFixed(1);
+  const railReadout = document.getElementById("cam-rail-readout");
+  if (railReadout) {
+    const pIdx = getRailPairIdx(state.camRailM);
+    railReadout.textContent = `y = ${state.camRailM.toFixed(1)} m • Cặp A${pIdx} / C${pIdx}`;
+  }
+
+  // 4 Emergency Action Buttons
+  const btnIntr = document.getElementById("btn-cam-test-intruder");
+  if (btnIntr) {
+    btnIntr.classList.toggle("active", alarm);
+    document.getElementById("lbl-btn-intruder").textContent = alarm ? "Đã xử lý (Tắt báo động)" : "Giả lập Trộm vào";
+    document.getElementById("sub-btn-intruder").textContent = alarm ? "Xác nhận an toàn ngay" : "Test phát hiện người lạ";
+  }
+
+  const btnSiren = document.getElementById("btn-cam-siren");
+  if (btnSiren) {
+    btnSiren.classList.toggle("active", state.camSirenActive);
+    document.getElementById("lbl-btn-siren").textContent = state.camSirenActive ? "ĐANG HÚ CÒI + ĐÈN PHA" : "Bật Còi 110dB + Đèn";
+    document.getElementById("sub-btn-siren").textContent = state.camSirenActive ? "Chạm để tắt còi tại vòm" : "Đuổi trộm tại chỗ";
+  }
+
+  const btnLock = document.getElementById("btn-cam-lock");
+  if (btnLock) {
+    btnLock.classList.toggle("unlocked", !state.camDoorLocked);
+    document.getElementById("lbl-btn-lock").textContent = state.camDoorLocked ? "Chốt cửa: ĐANG KHÓA" : "Chốt cửa: ĐANG MỞ";
+  }
+
+  // Event Log & Thumbnails
+  const logCount = document.getElementById("cam-log-count");
+  if (logCount) logCount.textContent = `${state.camEvents.length} sự kiện`;
+  const logList = document.getElementById("cam-event-list");
+  if (logList) {
+    logList.innerHTML = state.camEvents
+      .map(
+        (ev) => `
+      <div class="cel-item ${ev.danger ? "danger" : ""}">
+        <div class="cel-txt">
+          <div class="cel-top"><span class="cel-tag">${ev.tag}</span><span>${ev.time}</span></div>
+          <div class="cel-msg">${ev.msg}</div>
+        </div>
+        ${ev.thumb ? `<img class="cel-thumb" src="${ev.thumb}" alt="Ảnh bằng chứng" />` : ""}
+      </div>`
+      )
+      .join("");
+  }
+}
+
+// Camera Tab Event Bindings
+document.querySelectorAll("[data-cam-src]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    state.camActiveId = btn.dataset.camSrc;
+    renderCameraSecurityUI();
+    drawCameraFrame(performance.now());
+  });
+});
+
+document.getElementById("btn-cam-ir")?.addEventListener("click", () => {
+  state.camNightMode = !state.camNightMode;
+  renderCameraSecurityUI();
+  drawCameraFrame(performance.now());
+  showToast(state.camNightMode ? "Đã bật chế độ Hồng ngoại Đêm (IR)" : "Đã chuyển về chế độ Ngày có màu");
+});
+
+document.getElementById("btn-cam-guard")?.addEventListener("click", () => {
+  state.camGuardArmed = !state.camGuardArmed;
+  renderCameraSecurityUI();
+  showToast(state.camGuardArmed ? "Đã BẬT AI Canh trộm tự động" : "Đã TẮT cảnh báo trộm tạm thời");
+});
+
+document.getElementById("btn-cam-patrol")?.addEventListener("click", () => {
+  state.camAutoPatrol = !state.camAutoPatrol;
+  renderCameraSecurityUI();
+});
+
+document.getElementById("cam-rail-slider")?.addEventListener("input", (e) => {
+  state.camAutoPatrol = false;
+  state.camRailM = Number(e.target.value);
+  renderCameraSecurityUI();
+  drawCameraFrame(performance.now());
+});
+
+for (const id of ["btn-cam-test-intruder", "btn-sb-intruder", "btn-app-intruder"]) {
+  document.getElementById(id)?.addEventListener("click", () => {
+    triggerIntrusionSimulation();
+    if (state.camIntruderActive && (id === "btn-sb-intruder" || id === "btn-app-intruder")) {
+      switchTab("camera");
+    }
+  });
+}
+
+document.getElementById("btn-igb-view")?.addEventListener("click", () => switchTab("camera"));
+document.getElementById("btn-igb-clear")?.addEventListener("click", () => triggerIntrusionSimulation(false));
+
+document.getElementById("btn-cam-siren")?.addEventListener("click", () => {
+  state.camSirenActive = !state.camSirenActive;
+  if (state.camSirenActive) playSirenTone(2);
+  renderCameraSecurityUI();
+  drawCameraFrame(performance.now());
+  showToast(state.camSirenActive ? "Đang hú Còi 110dB + Nháy Đèn pha rơ-le 12V!" : "Đã tắt còi hú & đèn pha");
+});
+
+document.getElementById("btn-cam-lock")?.addEventListener("click", () => {
+  state.camDoorLocked = !state.camDoorLocked;
+  state.camEvents.unshift({
+    time: nowTimeStr(),
+    tag: "Chốt cửa",
+    danger: false,
+    msg: state.camDoorLocked ? "Chủ vườn đã KHÓA CHẶT chốt từ cửa lùa." : "Chủ vườn đã MỞ KHÓA cửa lùa từ xa.",
+    thumb: "",
+  });
+  renderCameraSecurityUI();
+  drawCameraFrame(performance.now());
+  showToast(state.camDoorLocked ? "Cửa lùa đã KHÓA CHẶT qua Relay 12V" : "Đã MỞ KHÓA cửa lùa từ xa");
+});
+
+for (const snapId of ["btn-cam-snapshot", "btn-cam-overlay-snap"]) {
+  document.getElementById(snapId)?.addEventListener("click", () => {
+    captureEvidenceSnapshot(
+      state.camIntruderActive ? "Bằng chứng Đỏ" : "Ảnh chụp tay",
+      `Lưu ảnh bằng chứng từ ${state.camActiveId === "cam1" ? "Cam 01 Hành lang" : "Cam 02 Cửa lùa"}.`,
+      state.camIntruderActive,
+      true
+    );
+    showToast("Đã chụp ảnh bằng chứng & lưu vào Nhật ký!");
+  });
+}
+
+// Smooth Camera Patrol & CCTV Render Loop (~20fps when Camera tab open)
+let lastCamDraw = 0;
+function camLoop(now) {
+  if (state.camAutoPatrol && state.camActiveId === "cam1" && state.activeTab === "camera") {
+    state.camRailM = 6.0 + 4.8 * Math.sin(now * 0.00045 - 0.35);
+    const slider = document.getElementById("cam-rail-slider");
+    const readout = document.getElementById("cam-rail-readout");
+    if (slider) slider.value = state.camRailM.toFixed(1);
+    if (readout) {
+      readout.textContent = `y = ${state.camRailM.toFixed(1)} m • Cặp A${getRailPairIdx(state.camRailM)} / C${getRailPairIdx(state.camRailM)}`;
+    }
+  }
+  if (state.activeTab === "camera" && now - lastCamDraw >= 48) {
+    lastCamDraw = now;
+    drawCameraFrame(now);
+  }
+  requestAnimationFrame(camLoop);
+}
+requestAnimationFrame(camLoop);
+
 // Live Clock Sync
 function updateClock() {
   const t = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
@@ -1033,3 +1676,4 @@ setInterval(updateClock, 30000);
 // Initial Boot
 state.plants = generatePlants(state.stageKey);
 renderAll();
+drawCameraFrame(performance.now());

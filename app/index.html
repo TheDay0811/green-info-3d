@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Green Info Mobile App – Giám sát Nông điện & AI Dưa lưới Đà Lạt</title>
-  <link rel="stylesheet" href="styles.css?v=20261122v" />
+  <link rel="stylesheet" href="styles.css?v=20261122x" />
 </head>
 <body>
   <!-- Desktop Showcase Control Strip (hidden automatically on mobile phones) -->
@@ -38,6 +38,10 @@
         <button class="sb-pill active" data-sim-stage="harvest">Ngày 64 (Canh chín)</button>
       </div>
       <div class="sb-group">
+        <button class="sb-btn-ghost danger-outline" id="btn-sb-intruder" title="Thử kịch bản Camera AI phát hiện trộm đột nhập ban đêm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <span>Test Trộm vào</span>
+        </button>
         <button class="sb-btn-ghost" id="btn-sb-wokwi" title="Kết nối trực tiếp mạch ESP32 trên Wokwi (greeninfo/v2/pilot01)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>
           <span>Link Wokwi</span>
@@ -107,6 +111,7 @@
         <div class="mobile-sim-strip">
           <div class="mss-scroll">
             <button class="mss-chip hil" id="btn-app-wokwi">Link Wokwi</button>
+            <button class="mss-chip sec-test" id="btn-app-intruder">Test Trộm</button>
             <span class="mss-sep"></span>
             <button class="mss-chip" data-sim-weather="morning">Sáng 19.5°</button>
             <button class="mss-chip active" data-sim-weather="heatwave">Nắng 37°</button>
@@ -116,6 +121,21 @@
             <button class="mss-chip" data-sim-stage="vegetative">N24</button>
             <button class="mss-chip" data-sim-stage="netting">N48</button>
             <button class="mss-chip active" data-sim-stage="harvest">N64 Chín</button>
+          </div>
+        </div>
+
+        <!-- Global Intrusion Push Banner (visible immediately across all tabs when triggered) -->
+        <div class="intruder-global-banner hidden" id="intruder-global-banner" role="alert">
+          <div class="igb-left">
+            <span class="igb-pulse"></span>
+            <div>
+              <div class="igb-title" id="igb-title">CẢNH BÁO XÂM NHẬP! PHÁT HIỆN NGƯỜI LẠ</div>
+              <div class="igb-sub" id="igb-sub">Cam AI vừa chụp ảnh bằng chứng • Đã bật còi &amp; đèn pha</div>
+            </div>
+          </div>
+          <div class="igb-actions">
+            <button class="igb-btn-view" id="btn-igb-view">Xem Cam</button>
+            <button class="igb-btn-mute" id="btn-igb-clear">An toàn</button>
           </div>
         </div>
 
@@ -268,6 +288,18 @@
                 <div class="gc-wind" id="ov-dome-glance">Gió 7 km/h • Nắng 37°</div>
                 <div class="gc-forecast" id="ov-forecast-glance">Dự báo 3h tới: Giảm nắng dần</div>
               </button>
+            </div>
+
+            <!-- Instant Live Camera & Anti-Theft Quick Card on Home Screen -->
+            <div class="cam-glance-card" id="ov-cam-glance">
+              <div class="cgc-left">
+                <span class="cgc-dot" id="ov-cam-dot"></span>
+                <div>
+                  <div class="cgc-title" id="ov-cam-title">Camera AI &amp; Chống trộm: Đang trực 24/7</div>
+                  <div class="cgc-sub" id="ov-cam-sub">2 Cam dùng chung (Hành lang 12 m + Cửa lùa) • Cửa đã khóa</div>
+                </div>
+              </div>
+              <button class="cgc-btn" data-go-tab="camera">Xem Cam ›</button>
             </div>
           </section>
 
@@ -518,6 +550,115 @@
             <div class="days-card" id="days-forecast"></div>
           </section>
 
+          <!-- ==================== TAB 5: CAMERA AI & CHỐNG TRỘM ==================== -->
+          <section class="tab-view" id="tab-camera" data-tab="camera">
+            <!-- Security Status Banner -->
+            <div class="cam-status-card" id="cam-status-card">
+              <div class="csc-left">
+                <span class="csc-pill" id="cam-guard-pill">AN NINH: ĐANG CANH GÁC</span>
+                <h3 id="cam-status-title">Camera AI Trực tiếp &amp; Chống trộm</h3>
+                <p id="cam-status-desc">Ban ngày quét 84 gốc dưa • Ban đêm chuyển AI nhận diện người lạ + còi hú 110dB + báo điện thoại &lt; 2s.</p>
+              </div>
+              <div class="csc-lock-tag" id="cam-lock-tag">CỬA KHÓA</div>
+            </div>
+
+            <!-- Dual Shared Camera Selector + Night IR / Guard Mode -->
+            <div class="cam-switch-row">
+              <button class="cam-src-btn active" data-cam-src="cam1">
+                <b>Cam 01 • Hành lang 12 m</b>
+                <span>Ray trượt soi 4 luống &amp; lối đi</span>
+              </button>
+              <button class="cam-src-btn" data-cam-src="cam2">
+                <b>Cam 02 • Cửa lùa &amp; Bồn</b>
+                <span>Bao quát cửa chính &amp; rào ngoài</span>
+              </button>
+            </div>
+
+            <!-- Live Procedural CCTV Viewport -->
+            <div class="cam-viewport" id="cam-viewport">
+              <canvas id="cam-canvas" width="480" height="270"></canvas>
+              <button class="cam-quick-snap" id="btn-cam-overlay-snap" title="Chụp ảnh màn hình Camera ngay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              </button>
+            </div>
+
+            <!-- Mode Toggles & Corridor Rail Slider -->
+            <div class="cam-controls-card">
+              <div class="ccc-modes">
+                <button class="ccc-toggle" id="btn-cam-ir">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                  <span>Hồng ngoại Đêm (IR)</span>
+                </button>
+                <button class="ccc-toggle active" id="btn-cam-guard">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+                  <span>AI Canh trộm: BẬT</span>
+                </button>
+                <button class="ccc-toggle active" id="btn-cam-patrol">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  <span>Tự trượt ray</span>
+                </button>
+              </div>
+
+              <div class="ccc-rail-wrap" id="cam-rail-control-wrap">
+                <div class="ccc-rail-head">
+                  <span>Vị trí Camera trượt trên ray hành lang (Cam 01):</span>
+                  <b id="cam-rail-readout">y = 4.2 m • Cặp A07 / C07</b>
+                </div>
+                <input type="range" id="cam-rail-slider" min="0.5" max="11.5" step="0.1" value="4.2" />
+              </div>
+            </div>
+
+            <!-- 4 Emergency & Evidence Actions -->
+            <div class="cam-defense-grid">
+              <button class="cd-btn alarm" id="btn-cam-test-intruder">
+                <span class="cd-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </span>
+                <b id="lbl-btn-intruder">Giả lập Trộm vào</b>
+                <small id="sub-btn-intruder">Test phát hiện người lạ</small>
+              </button>
+
+              <button class="cd-btn siren" id="btn-cam-siren">
+                <span class="cd-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                </span>
+                <b id="lbl-btn-siren">Bật Còi 110dB + Đèn</b>
+                <small id="sub-btn-siren">Đuổi trộm tại chỗ</small>
+              </button>
+
+              <button class="cd-btn snap" id="btn-cam-snapshot">
+                <span class="cd-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                </span>
+                <b>Chụp ảnh Bằng chứng</b>
+                <small>Lưu nhật ký + Tải PNG</small>
+              </button>
+
+              <button class="cd-btn lock" id="btn-cam-lock">
+                <span class="cd-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+                <b id="lbl-btn-lock">Chốt cửa: ĐANG KHÓA</b>
+                <small>Khóa từ xa qua Relay 12V</small>
+              </button>
+            </div>
+
+            <!-- Event History & Evidence Snapshots -->
+            <div class="cam-log-card">
+              <div class="clc-head">
+                <h4>Nhật ký Camera AI &amp; Ảnh Bằng chứng</h4>
+                <span class="sh-tag" id="cam-log-count">3 sự kiện</span>
+              </div>
+              <div class="cam-event-list" id="cam-event-list"></div>
+            </div>
+
+            <!-- Dual-Use Cost Justification Card -->
+            <div class="cam-dual-note">
+              <b>Tại sao không tốn thêm tiền lắp cam chống trộm riêng?</b>
+              <p>Chính cụm <b>1–2 Camera AI (~500k–1tr/nhà vòm)</b> dùng chung cho nông nghiệp ban ngày sẽ tự động chuyển chế độ <b>Hồng ngoại AI Human Detection</b> ban đêm (hoặc khi bật "Vắng chủ"): phát hiện dáng người lạ mở cửa/rạch lưới 32 Mesh, tự bật rơ-le đèn pha + còi hú 110dB từ nguồn ắc quy LiFePO4 24V và gửi ảnh chụp về web điện thoại dưới 2 giây (bỏ qua gió rung lá hay chim nhỏ).</p>
+            </div>
+          </section>
+
           <!-- ==================== TAB 4: TRỢ LÝ AI ==================== -->
           <section class="tab-view" id="tab-ai" data-tab="ai">
             <div class="ai-hero-banner">
@@ -597,6 +738,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"/><path d="M12 6c0-2 1.5-3.5 3.5-3.5"/><path d="M9 13c0-3.5 1.5-7 3-7s3 3.5 3 7-1.5 7-3 7-3-3.5-3-7Z"/></svg>
             <span>Cây &amp; Chín</span>
           </button>
+          <button class="tab-btn tab-cam-btn" data-tab-target="camera">
+            <span class="tab-cam-dot" id="tab-cam-dot"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+            <span>Camera</span>
+          </button>
           <button class="tab-btn" data-tab-target="dome">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
             <span>Mái &amp; Gió</span>
@@ -613,6 +759,6 @@
     </div>
   </main>
 
-  <script type="module" src="app.js?v=20261122v"></script>
+  <script type="module" src="app.js?v=20261122x"></script>
 </body>
 </html>
